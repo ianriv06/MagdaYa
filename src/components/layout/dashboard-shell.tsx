@@ -5,7 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
-import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 
 interface NavItem {
   href: string;
@@ -15,10 +21,13 @@ interface NavItem {
 
 function NavIcon({ icon, filled }: { icon: ReactNode; filled: boolean }) {
   if (!isValidElement(icon)) return icon;
-  return cloneElement(icon as ReactElement<{ fill?: string; strokeWidth?: number }>, {
-    fill: filled ? "currentColor" : "none",
-    strokeWidth: filled ? 1.5 : 1.75,
-  });
+  return cloneElement(
+    icon as ReactElement<{ fill?: string; strokeWidth?: number }>,
+    {
+      fill: filled ? "currentColor" : "none",
+      strokeWidth: filled ? 1.5 : 1.75,
+    }
+  );
 }
 
 /** Only the most specific matching tab is active (avoids parent+child both highlighted). */
@@ -94,7 +103,7 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 pb-[calc(62px+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-0">
         <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center justify-between md:px-8">
           <h1 className="font-display text-lg font-bold">{title}</h1>
           <button
@@ -109,10 +118,7 @@ export function DashboardShell({
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
 
-      <nav
-        className="fixed bottom-0 inset-x-0 z-[1100] flex md:hidden bg-[#2c2c2c] border-t border-white/10 safe-bottom"
-        aria-label="Navegación"
-      >
+      <MobileBottomNav>
         <div className="flex w-full items-stretch justify-around h-[62px]">
           {nav.map((item) => {
             const active = isNavActive(pathname, item.href, hrefs);
@@ -120,22 +126,19 @@ export function DashboardShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-0.5 px-0.5 min-w-0 max-w-[5.5rem] transition-colors",
-                  "text-brand"
-                )}
+                className="flex flex-1 flex-col items-center justify-center gap-0.5 px-0.5 min-w-0 max-w-[5.5rem] text-brand transition-colors"
               >
-                <span className="text-brand shrink-0">
+                <span className="shrink-0">
                   <NavIcon icon={item.icon} filled={active} />
                 </span>
-                <span className="text-[11px] font-medium leading-tight text-center truncate w-full text-brand">
+                <span className="text-[11px] font-medium leading-tight text-center truncate w-full">
                   {item.label}
                 </span>
               </Link>
             );
           })}
         </div>
-      </nav>
+      </MobileBottomNav>
     </div>
   );
 }

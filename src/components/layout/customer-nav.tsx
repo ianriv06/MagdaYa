@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ShoppingBag, Home, ClipboardList, User, Search } from "lucide-react";
 import { useCart } from "@/store/cart";
 import { useAuth } from "@/components/providers/auth-provider";
-import { cn } from "@/lib/utils";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 
 /** Only the most specific matching tab is active. */
 function isNavActive(pathname: string, href: string, allHrefs: string[]) {
@@ -24,6 +24,7 @@ export function CustomerNav() {
   const itemCount = useCart((s) => s.itemCount());
   const { profile } = useAuth();
 
+  // Staff roles use DashboardShell nav — don't show customer tabs on top
   if (profile && profile.role !== "customer") return null;
 
   const links = [
@@ -35,10 +36,7 @@ export function CustomerNav() {
   const hrefs = links.map((l) => l.href);
 
   return (
-    <nav
-      className="fixed bottom-0 inset-x-0 z-[1100] flex md:hidden bg-[#2c2c2c] border-t border-white/10 safe-bottom"
-      aria-label="Navegación"
-    >
+    <MobileBottomNav>
       <div className="flex items-stretch justify-around h-[58px] w-full max-w-lg mx-auto">
         {links.map(({ href, icon: Icon, label, badge }) => {
           const active = isNavActive(pathname, href, hrefs);
@@ -46,10 +44,7 @@ export function CustomerNav() {
             <Link
               key={href}
               href={href}
-              className={cn(
-                "relative flex flex-1 flex-col items-center justify-center gap-0 min-w-0 transition-colors",
-                "text-brand"
-              )}
+              className="relative flex flex-1 flex-col items-center justify-center gap-0 min-w-0 transition-colors text-brand"
             >
               <Icon
                 className="size-[29px] shrink-0"
@@ -68,7 +63,7 @@ export function CustomerNav() {
           );
         })}
       </div>
-    </nav>
+    </MobileBottomNav>
   );
 }
 
@@ -79,7 +74,10 @@ export function DesktopHeader() {
   return (
     <header className="sticky top-0 z-40 hidden md:block bg-white/95 backdrop-blur-md border-b border-border">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
-        <Link href="/" className="font-display text-2xl font-bold tracking-tight shrink-0">
+        <Link
+          href="/"
+          className="font-display text-2xl font-bold tracking-tight shrink-0"
+        >
           Magda<span className="text-brand">Ya</span>
         </Link>
 
@@ -100,10 +98,16 @@ export function DesktopHeader() {
           <Link href="/" className="text-sm font-semibold text-ink">
             Restaurantes
           </Link>
-          <Link href="/orders" className="text-sm font-semibold text-muted hover:text-ink">
+          <Link
+            href="/orders"
+            className="text-sm font-semibold text-muted hover:text-ink"
+          >
             Pedidos
           </Link>
-          <Link href="/cart" className="relative text-sm font-semibold text-muted hover:text-ink">
+          <Link
+            href="/cart"
+            className="relative text-sm font-semibold text-muted hover:text-ink"
+          >
             Carrito
             {itemCount > 0 && (
               <span className="ml-1.5 inline-flex size-5 items-center justify-center rounded-full bg-brand text-white text-[10px] font-bold">
