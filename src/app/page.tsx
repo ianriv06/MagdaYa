@@ -6,7 +6,7 @@ import type { Restaurant } from "@/lib/types";
 import { RestaurantCard } from "@/components/restaurant/restaurant-card";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
 import { useCart } from "@/store/cart";
-import { cn, isRestaurantAcceptingOrders } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { MapPin, Search } from "lucide-react";
 
 export default function HomePage() {
@@ -23,8 +23,8 @@ export default function HomePage() {
         .select("*")
         .eq("is_open", true)
         .order("rating", { ascending: false });
-      const openNow = (data || []).filter((r) => isRestaurantAcceptingOrders(r));
-      setRestaurants(openNow);
+      // Show all listed restaurants; cards mark schedule-closed with "Cerrado"
+      setRestaurants(data || []);
       setLoading(false);
     };
     load();
