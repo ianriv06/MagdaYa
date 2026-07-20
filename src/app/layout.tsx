@@ -18,7 +18,13 @@ export const metadata: Metadata = {
   title: "MagdaYa — Comida a domicilio y para recoger",
   description:
     "Pide comida a domicilio o para recoger. Rápido, simple, pago con QR. Sigue tu pedido en tiempo real.",
-  icons: { icon: "/favicon.svg" },
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png", sizes: "1024x1024", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {

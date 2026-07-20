@@ -7,7 +7,7 @@ import { RestaurantCard } from "@/components/restaurant/restaurant-card";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
 import { useCart } from "@/store/cart";
 import { cn } from "@/lib/utils";
-import { ChevronDown, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { MapPin, Search } from "lucide-react";
 
 export default function HomePage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -63,7 +63,7 @@ export default function HomePage() {
                   className={cn(
                     "h-8 px-4 rounded-full text-[13px] font-bold transition-colors",
                     orderType === id
-                      ? "bg-ink text-white"
+                      ? "bg-brand text-white"
                       : "text-ink/70"
                   )}
                 >
@@ -82,7 +82,6 @@ export default function HomePage() {
             <span className="truncate max-w-[70%]">
               Ahora · {locationLabel}
             </span>
-            <ChevronDown className="size-3.5 shrink-0 text-muted" />
           </button>
 
           {/* Search */}
@@ -93,15 +92,8 @@ export default function HomePage() {
               placeholder="Comida, restaurantes…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full h-11 pl-11 pr-11 rounded-full bg-subtle text-[15px] placeholder:text-muted focus:outline-none"
+              className="w-full h-11 pl-11 pr-4 rounded-full bg-subtle text-[15px] placeholder:text-muted focus:outline-none"
             />
-            <button
-              type="button"
-              aria-label="Filtros"
-              className="absolute right-2 top-1/2 -translate-y-1/2 size-8 rounded-full flex items-center justify-center text-ink"
-            >
-              <SlidersHorizontal className="size-4" />
-            </button>
           </div>
         </div>
       </header>
@@ -121,7 +113,7 @@ export default function HomePage() {
               onClick={() => setOrderType(id)}
               className={cn(
                 "h-9 px-4 rounded-full text-sm font-bold transition-colors",
-                orderType === id ? "bg-ink text-white" : "bg-subtle text-ink"
+                orderType === id ? "bg-brand text-white" : "bg-subtle text-ink"
               )}
             >
               {label}

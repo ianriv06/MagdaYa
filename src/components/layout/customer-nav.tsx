@@ -36,7 +36,7 @@ export function CustomerNav() {
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 bg-[#2c2c2c] border-t border-white/10 safe-bottom md:hidden">
-      <div className="flex items-stretch justify-around h-[60px] max-w-lg mx-auto">
+      <div className="flex items-stretch justify-around h-[58px] max-w-lg mx-auto">
         {links.map(({ href, icon: Icon, label, badge }) => {
           const active = isNavActive(pathname, href, hrefs);
           return (
@@ -44,16 +44,16 @@ export function CustomerNav() {
               key={href}
               href={href}
               className={cn(
-                "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors",
+                "relative flex flex-1 flex-col items-center justify-center gap-0 transition-colors",
                 active ? "text-brand" : "text-brand/55"
               )}
             >
               <Icon
-                className="size-[26px]"
-                strokeWidth={1.5}
-                fill="currentColor"
+                className="size-[29px]"
+                strokeWidth={active ? 1.5 : 1.75}
+                fill={active ? "currentColor" : "none"}
               />
-              <span className="text-[12px] font-medium leading-none">
+              <span className="text-[13px] font-medium leading-none">
                 {label}
               </span>
               {badge != null && badge > 0 && (

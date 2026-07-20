@@ -61,11 +61,15 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           </div>
         </div>
         <p className="text-[13px] text-muted mt-0.5 truncate">
-          {formatDeliveryEta(
-            restaurant.delivery_eta_range,
-            restaurant.eta_minutes
-          )}
-          {restaurant.cuisine ? ` · ${restaurant.cuisine}` : ""}
+          <span className="text-brand font-bold">
+            {formatDeliveryEta(
+              restaurant.delivery_eta_range,
+              restaurant.eta_minutes
+            )}
+          </span>
+          {restaurant.cuisine ? (
+            <span> · {restaurant.cuisine}</span>
+          ) : null}
         </p>
       </div>
     </Link>

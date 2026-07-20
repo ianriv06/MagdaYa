@@ -69,7 +69,7 @@ export default function CartPage() {
               onClick={() => setOrderType(id)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 h-9 rounded-full text-[13px] font-bold transition-colors",
-                orderType === id ? "bg-ink text-white" : "text-ink/70"
+                orderType === id ? "bg-brand text-white" : "text-ink/70"
               )}
             >
               <Icon className="size-3.5" />

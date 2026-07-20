@@ -5,12 +5,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 
 interface NavItem {
   href: string;
   label: string;
   icon: ReactNode;
+}
+
+function NavIcon({ icon, filled }: { icon: ReactNode; filled: boolean }) {
+  if (!isValidElement(icon)) return icon;
+  return cloneElement(icon as ReactElement<{ fill?: string; strokeWidth?: number }>, {
+    fill: filled ? "currentColor" : "none",
+    strokeWidth: filled ? 1.5 : 1.75,
+  });
 }
 
 /** Only the most specific matching tab is active (avoids parent+child both highlighted). */
@@ -69,7 +77,7 @@ export function DashboardShell({
                     : "text-white/70 hover:bg-white/10 hover:text-white"
                 )}
               >
-                {item.icon}
+                <NavIcon icon={item.icon} filled={active} />
                 {item.label}
               </Link>
             );
@@ -101,7 +109,7 @@ export function DashboardShell({
         <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">{children}</main>
 
         <nav className="fixed bottom-0 inset-x-0 z-50 bg-[#2c2c2c] border-t border-white/10 safe-bottom md:hidden">
-          <div className="flex items-center justify-around h-[68px]">
+          <div className="flex items-center justify-around h-[62px]">
             {nav.map((item) => {
               const active = isNavActive(pathname, item.href, hrefs);
               return (
@@ -109,16 +117,16 @@ export function DashboardShell({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 px-2 min-w-[64px] transition-colors",
+                    "flex flex-col items-center gap-0 px-1.5 min-w-[56px] transition-colors",
                     active ? "text-brand" : "text-brand/55"
                   )}
                 >
                   <span className={cn(active ? "text-brand" : "text-brand/55")}>
-                    {item.icon}
+                    <NavIcon icon={item.icon} filled={active} />
                   </span>
                   <span
                     className={cn(
-                      "text-[12px] font-medium",
+                      "text-[13px] font-medium leading-none",
                       active ? "text-brand" : "text-brand/55"
                     )}
                   >

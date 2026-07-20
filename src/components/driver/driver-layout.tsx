@@ -12,12 +12,12 @@ const nav = [
   {
     href: "/driver",
     label: "Disponibles",
-    icon: <Package className="size-6" strokeWidth={1.5} fill="currentColor" />,
+    icon: <Package className="size-[26px]" />,
   },
   {
     href: "/driver/active",
     label: "Activo",
-    icon: <Navigation className="size-6" strokeWidth={1.5} fill="currentColor" />,
+    icon: <Navigation className="size-[26px]" />,
   },
 ];
 
