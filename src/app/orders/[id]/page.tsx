@@ -130,14 +130,19 @@ export default function OrderTrackingPage() {
         <StatusBadge status={order.status} />
       </header>
 
-      {showMap && markers.length > 0 && (
-        <OrderMap
-          markers={markers}
-          className="h-56 md:h-72 rounded-none border-0 border-b"
-        />
-      )}
-
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-slide-up">
+        <section className="rounded-3xl bg-surface border border-border p-5">
+          <h2 className="font-semibold mb-4">Avance del pedido</h2>
+          <OrderTimeline status={order.status} />
+        </section>
+
+        {showMap && markers.length > 0 && (
+          <OrderMap
+            markers={markers}
+            className="h-56 md:h-72 rounded-3xl border border-border overflow-hidden"
+          />
+        )}
+
         <div className="flex items-center gap-2 text-sm text-muted">
           {order.order_type === "delivery" ? (
             <Bike className="size-4" />
@@ -177,11 +182,6 @@ export default function OrderTrackingPage() {
             <span className="font-semibold text-ink">{order.whatsapp}</span>
           </p>
         )}
-
-        <section className="rounded-3xl bg-surface border border-border p-5">
-          <h2 className="font-semibold mb-4">Avance del pedido</h2>
-          <OrderTimeline status={order.status} />
-        </section>
 
         {order.status === "placed" && (
           <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
