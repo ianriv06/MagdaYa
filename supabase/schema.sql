@@ -200,7 +200,7 @@ CREATE TRIGGER on_order_status_change
 CREATE OR REPLACE FUNCTION auto_in_progress_on_confirm()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.status = 'confirmed' AND OLD.status = 'money_paid' THEN
+  IF NEW.status = 'confirmed' AND OLD.status IN ('money_paid', 'placed') THEN
     NEW.status = 'in_progress';
   END IF;
   RETURN NEW;

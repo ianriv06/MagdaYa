@@ -102,9 +102,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Super Admin",
 };
 
+/** Customer-facing progress steps (skips legacy money_paid). */
 export const ORDER_STATUS_FLOW: OrderStatus[] = [
   "placed",
-  "money_paid",
   "confirmed",
   "in_progress",
   "on_the_way",
@@ -112,6 +112,10 @@ export const ORDER_STATUS_FLOW: OrderStatus[] = [
 ];
 
 export function getStatusIndex(status: OrderStatus) {
+  // Legacy money_paid — treat as still awaiting admin confirm
+  if (status === "money_paid") {
+    return ORDER_STATUS_FLOW.indexOf("placed");
+  }
   return ORDER_STATUS_FLOW.indexOf(status);
 }
 

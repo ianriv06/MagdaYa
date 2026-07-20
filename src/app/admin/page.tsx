@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { OrderTimeline } from "@/components/ui/order-timeline";
 import { formatCurrency, ORDER_STATUS_LABELS } from "@/lib/utils";
 import type { Order, OrderStatus } from "@/lib/types";
-import { Check, DollarSign } from "lucide-react";
+import { Check } from "lucide-react";
 
 export default function AdminOrdersPage() {
   return (
@@ -55,8 +55,23 @@ function AdminOrders() {
 
   const updateStatus = async (orderId: string, status: OrderStatus) => {
     setUpdating(orderId);
-    // confirmed auto-moves to in_progress via DB trigger
     await supabase.from("orders").update({ status }).eq("id", orderId);
+
+    // Confirming should move into prep. DB trigger may do this; if not, force it.
+    if (status === "confirmed") {
+      const { data } = await supabase
+        .from("orders")
+        .select("status")
+        .eq("id", orderId)
+        .single();
+      if (data?.status === "confirmed") {
+        await supabase
+          .from("orders")
+          .update({ status: "in_progress" })
+          .eq("id", orderId);
+      }
+    }
+
     await load();
     setUpdating(null);
   };
@@ -65,20 +80,22 @@ function AdminOrders() {
     filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
   const counts = {
-    placed: orders.filter((o) => o.status === "placed").length,
-    money_paid: orders.filter((o) => o.status === "money_paid").length,
+    pending: orders.filter((o) =>
+      o.status === "placed" || o.status === "money_paid"
+    ).length,
     active: orders.filter((o) =>
       ["confirmed", "in_progress", "on_the_way"].includes(o.status)
     ).length,
+    delivered: orders.filter((o) => o.status === "delivered").length,
   };
 
   return (
     <div className="space-y-6 animate-slide-up">
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Esperando pago", value: counts.placed },
-          { label: "Por confirmar", value: counts.money_paid },
+          { label: "Por confirmar", value: counts.pending },
           { label: "En curso", value: counts.active },
+          { label: "Entregados", value: counts.delivered },
         ].map((s) => (
           <div
             key={s.label}
@@ -95,7 +112,6 @@ function AdminOrders() {
           [
             "all",
             "placed",
-            "money_paid",
             "in_progress",
             "on_the_way",
             "delivered",
@@ -149,19 +165,7 @@ function AdminOrders() {
                 </div>
               </button>
 
-              {/* Manual admin actions */}
-              {order.status === "placed" && (
-                <Button
-                  className="w-full"
-                  onClick={() => updateStatus(order.id, "money_paid")}
-                  loading={updating === order.id}
-                >
-                  <DollarSign className="size-4" />
-                  Marcar pago recibido por el comercio
-                </Button>
-              )}
-
-              {order.status === "money_paid" && (
+              {(order.status === "placed" || order.status === "money_paid") && (
                 <Button
                   className="w-full"
                   onClick={() => updateStatus(order.id, "confirmed")}
@@ -174,7 +178,8 @@ function AdminOrders() {
 
               {order.status === "confirmed" && (
                 <p className="text-xs text-muted text-center">
-                  Pasó automáticamente a En preparación — repartidores notificados
+                  Pasó automáticamente a En preparación — repartidores
+                  notificados
                 </p>
               )}
 
@@ -233,7 +238,6 @@ function AdminOrders() {
                   )}
                   <OrderTimeline status={order.status} />
 
-                  {/* Manual override for admin */}
                   {user &&
                     !["delivered", "cancelled", "placed", "money_paid"].includes(
                       order.status

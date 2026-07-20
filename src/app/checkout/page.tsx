@@ -189,7 +189,7 @@ export default function CheckoutPage() {
         order_id: order.id,
         status: "placed",
         changed_by: user.id,
-        note: "Pedido realizado, esperando confirmación de pago",
+        note: "Pedido realizado, esperando confirmación",
       });
 
       clearCart();
