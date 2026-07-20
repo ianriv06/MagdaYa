@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/store/cart";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
+import { MobileLogoBar } from "@/components/layout/app-logo";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, cn, DELIVERY_FEE, PLATFORM_FEE } from "@/lib/utils";
 import { Minus, Plus, Trash2, Bike, Store } from "lucide-react";
@@ -31,6 +32,7 @@ export default function CartPage() {
     return (
       <div className="min-h-dvh bg-white pb-[72px]">
         <DesktopHeader />
+        <MobileLogoBar />
         <div className="flex flex-col items-center justify-center py-24 px-4">
           <div className="size-16 rounded-full bg-subtle flex items-center justify-center mb-4">
             <Store className="size-7 text-ink" />
@@ -53,6 +55,7 @@ export default function CartPage() {
   return (
     <div className="min-h-dvh bg-white pb-[100px] md:pb-8">
       <DesktopHeader />
+      <MobileLogoBar />
       <div className="max-w-lg mx-auto px-4 py-5 animate-slide-up">
         <h1 className="text-[22px] font-bold tracking-tight mb-0.5">Carrito</h1>
         <p className="text-muted text-[13px] mb-5">De {restaurantName}</p>

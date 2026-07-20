@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
+import { AppLogo } from "@/components/layout/app-logo";
 import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
 import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
@@ -56,10 +57,8 @@ export function DashboardShell({
     <div className="min-h-dvh bg-canvas flex flex-col md:flex-row">
       <aside className="hidden md:flex md:w-64 md:flex-col bg-ink text-white shrink-0">
         <div className="p-6 border-b border-white/10">
-          <Link href="/" className="font-display text-xl font-bold">
-            Magda<span className="text-brand">Ya</span>
-          </Link>
-          <p className="text-xs text-white/50 mt-1 uppercase tracking-wider">
+          <AppLogo size="md" />
+          <p className="text-xs text-white/50 mt-3 uppercase tracking-wider">
             {roleLabel}
           </p>
         </div>
@@ -95,8 +94,11 @@ export function DashboardShell({
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center justify-between md:px-8">
-          <h1 className="font-display text-lg font-bold">{title}</h1>
+        <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center gap-3 md:px-8">
+          <AppLogo size="xs" className="md:hidden" />
+          <h1 className="font-display text-lg font-bold flex-1 min-w-0 truncate">
+            {title}
+          </h1>
           <button
             onClick={handleSignOut}
             className="md:hidden text-muted p-2"

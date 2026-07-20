@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
+import { MobileLogoBar } from "@/components/layout/app-logo";
 import { Button } from "@/components/ui/button";
 import { getDashboardPath, ROLE_LABELS, isPhoneAuthEmail } from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
@@ -13,6 +14,7 @@ export default function AccountPage() {
   return (
     <div className="min-h-dvh pb-20">
       <DesktopHeader />
+      <MobileLogoBar />
       <div className="max-w-lg mx-auto px-4 py-6 animate-slide-up">
         <h1 className="font-display text-2xl font-bold mb-6">Cuenta</h1>
 

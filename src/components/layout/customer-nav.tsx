@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ShoppingBag, Home, ClipboardList, User, Search } from "lucide-react";
 import { useCart } from "@/store/cart";
 import { useAuth } from "@/components/providers/auth-provider";
+import { AppLogo } from "@/components/layout/app-logo";
 import { cn } from "@/lib/utils";
 
 /** Only the most specific matching tab is active. */
@@ -76,9 +77,7 @@ export function DesktopHeader() {
   return (
     <header className="sticky top-0 z-40 hidden md:block bg-white/95 backdrop-blur-md border-b border-border">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
-        <Link href="/" className="font-display text-2xl font-bold tracking-tight shrink-0">
-          Magda<span className="text-brand">Ya</span>
-        </Link>
+        <AppLogo size="md" />
 
         <div className="flex-1 max-w-md relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted" />

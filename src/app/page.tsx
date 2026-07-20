@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Restaurant } from "@/lib/types";
 import { RestaurantCard } from "@/components/restaurant/restaurant-card";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
+import { MobileLogoBar } from "@/components/layout/app-logo";
 import { useCart } from "@/store/cart";
 import { cn } from "@/lib/utils";
 import { MapPin, Search } from "lucide-react";
@@ -46,7 +47,8 @@ export default function HomePage() {
 
       {/* Mobile sticky header — Uber Eats style */}
       <header className="sticky top-0 z-40 bg-white safe-top md:hidden border-b border-transparent">
-        <div className="px-4 pt-3 pb-3 space-y-3">
+        <MobileLogoBar sticky={false} className="border-0 pb-0" />
+        <div className="px-4 pt-1 pb-3 space-y-3">
           {/* Delivery / Pickup segmented control */}
           <div className="flex justify-center">
             <div className="inline-flex p-1.5 rounded-full bg-subtle">

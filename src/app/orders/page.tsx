@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/auth-provider";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
+import { MobileLogoBar } from "@/components/layout/app-logo";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import type { Order } from "@/lib/types";
@@ -57,6 +58,7 @@ export default function OrdersPage() {
   return (
     <div className="min-h-dvh pb-20">
       <DesktopHeader />
+      <MobileLogoBar />
       <div className="max-w-lg mx-auto px-4 py-6">
         <h1 className="font-display text-2xl font-bold mb-6">Tus pedidos</h1>
 
