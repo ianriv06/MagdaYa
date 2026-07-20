@@ -10,19 +10,22 @@ export function MenuItemCard({
   item,
   restaurantId,
   restaurantName,
+  orderingDisabled = false,
 }: {
   item: MenuItem;
   restaurantId: string;
   restaurantName: string;
+  orderingDisabled?: boolean;
 }) {
   const { items, addItem, updateQuantity } = useCart();
   const inCart = items.find((i) => i.menuItem.id === item.id);
+  const canOrder = item.is_available && !orderingDisabled;
 
   return (
     <div
       className={cn(
         "flex gap-3 py-4 border-b border-border last:border-0",
-        !item.is_available && "opacity-45"
+        !canOrder && "opacity-45"
       )}
     >
       <div className="flex-1 min-w-0 flex flex-col pr-1">
@@ -38,6 +41,8 @@ export function MenuItemCard({
           </span>
           {!item.is_available ? (
             <span className="text-xs text-muted font-medium">No disponible</span>
+          ) : orderingDisabled ? (
+            <span className="text-xs text-muted font-medium">Cerrado</span>
           ) : inCart ? (
             <div className="flex items-center gap-2">
               <button

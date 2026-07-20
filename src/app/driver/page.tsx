@@ -17,7 +17,7 @@ import {
   getDriverEarnings,
 } from "@/lib/utils";
 import type { Driver, Order } from "@/lib/types";
-import { MapPin, Store } from "lucide-react";
+import { MapPin, Store, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 function isMissingOfferSupport(err: unknown) {
@@ -60,7 +60,7 @@ function AvailableList({ driver }: { driver: Driver }) {
     if (useOffers) {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, restaurants(*), order_items(*)")
+        .select("*, restaurants(*), order_items(*), profiles:customer_id(*)")
         .in("status", ["confirmed", "in_progress"])
         .eq("order_type", "delivery")
         .eq("offered_driver_id", driver.id)
@@ -89,7 +89,7 @@ function AvailableList({ driver }: { driver: Driver }) {
     // Legacy fallback: all drivers see unassigned delivery orders
     const { data } = await supabase
       .from("orders")
-      .select("*, restaurants(*), order_items(*)")
+      .select("*, restaurants(*), order_items(*), profiles:customer_id(*)")
       .in("status", ["confirmed", "in_progress"])
       .eq("order_type", "delivery")
       .is("driver_id", null)
@@ -246,6 +246,10 @@ function AvailableList({ driver }: { driver: Driver }) {
               </div>
 
               <div className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <User className="size-4 text-brand mt-0.5 shrink-0" />
+                  <span>{order.profiles?.full_name || "Cliente"}</span>
+                </div>
                 <div className="flex items-start gap-2">
                   <Store className="size-4 text-danger mt-0.5 shrink-0" />
                   <span>{order.restaurants?.address}</span>

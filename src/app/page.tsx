@@ -6,7 +6,7 @@ import type { Restaurant } from "@/lib/types";
 import { RestaurantCard } from "@/components/restaurant/restaurant-card";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
 import { useCart } from "@/store/cart";
-import { cn } from "@/lib/utils";
+import { cn, isRestaurantAcceptingOrders } from "@/lib/utils";
 import { MapPin, Search } from "lucide-react";
 
 export default function HomePage() {
@@ -23,7 +23,8 @@ export default function HomePage() {
         .select("*")
         .eq("is_open", true)
         .order("rating", { ascending: false });
-      setRestaurants(data || []);
+      const openNow = (data || []).filter((r) => isRestaurantAcceptingOrders(r));
+      setRestaurants(openNow);
       setLoading(false);
     };
     load();

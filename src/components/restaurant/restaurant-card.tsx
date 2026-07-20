@@ -4,9 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star, Heart } from "lucide-react";
 import type { Restaurant } from "@/lib/types";
-import { formatDeliveryEta } from "@/lib/utils";
+import { formatDeliveryEta, isRestaurantAcceptingOrders } from "@/lib/utils";
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+  const acceptingOrders = isRestaurantAcceptingOrders(restaurant);
   return (
     <Link
       href={`/restaurants/${restaurant.id}`}
@@ -33,7 +34,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             </span>
           </div>
         )}
-        {!restaurant.is_open && (
+        {!acceptingOrders && (
           <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
             <span className="text-white font-bold text-sm bg-black/70 px-3 py-1.5 rounded-full">
               Cerrado

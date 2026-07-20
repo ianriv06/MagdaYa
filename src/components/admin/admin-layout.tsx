@@ -4,13 +4,18 @@ import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { QrCode, ClipboardList } from "lucide-react";
+import { QrCode, ClipboardList, Wallet } from "lucide-react";
 
 const nav = [
   {
     href: "/admin",
     label: "Pedidos",
     icon: <ClipboardList className="size-[26px]" />,
+  },
+  {
+    href: "/admin/pagos",
+    label: "Pagos",
+    icon: <Wallet className="size-[26px]" />,
   },
   {
     href: "/admin/payment",

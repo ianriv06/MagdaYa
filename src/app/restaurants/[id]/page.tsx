@@ -9,7 +9,7 @@ import type { Restaurant, MenuItem, MenuCategory } from "@/lib/types";
 import { MenuItemCard } from "@/components/restaurant/menu-item-card";
 import { CustomerNav } from "@/components/layout/customer-nav";
 import { useCart } from "@/store/cart";
-import { formatCurrency, formatDeliveryEta } from "@/lib/utils";
+import { formatCurrency, formatDeliveryEta, isRestaurantAcceptingOrders } from "@/lib/utils";
 import { ArrowLeft, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -72,6 +72,7 @@ export default function RestaurantDetailPage() {
     category: c,
     items: items.filter((i) => i.category_id === c.id),
   }));
+  const acceptingOrders = isRestaurantAcceptingOrders(restaurant);
 
   return (
     <div className="min-h-dvh bg-white pb-[88px] md:pb-8">
@@ -123,10 +124,26 @@ export default function RestaurantDetailPage() {
                 <span>{restaurant.cuisine}</span>
               </>
             )}
+            <span>·</span>
+            <span
+              className={
+                acceptingOrders
+                  ? "font-semibold text-brand"
+                  : "font-semibold text-danger"
+              }
+            >
+              {acceptingOrders ? "Abierto" : "Cerrado"}
+            </span>
           </p>
           {restaurant.description && (
             <p className="text-[13px] text-muted mt-2 leading-relaxed">
               {restaurant.description}
+            </p>
+          )}
+          {!acceptingOrders && (
+            <p className="mt-3 text-sm font-medium text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              Este restaurante está cerrado ahora. Vuelve en su horario de
+              atención.
             </p>
           )}
         </div>
@@ -146,6 +163,7 @@ export default function RestaurantDetailPage() {
                         item={item}
                         restaurantId={restaurant.id}
                         restaurantName={restaurant.name}
+                        orderingDisabled={!acceptingOrders}
                       />
                     ))}
                   </div>
@@ -165,6 +183,7 @@ export default function RestaurantDetailPage() {
                     item={item}
                     restaurantId={restaurant.id}
                     restaurantName={restaurant.name}
+                    orderingDisabled={!acceptingOrders}
                   />
                 ))}
               </div>

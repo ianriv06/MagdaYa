@@ -22,6 +22,7 @@ CREATE TABLE profiles (
   phone TEXT,
   role user_role NOT NULL DEFAULT 'customer',
   avatar_url TEXT,
+  payment_qr_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -44,6 +45,7 @@ CREATE TABLE restaurants (
   delivery_eta_range TEXT NOT NULL DEFAULT '15-30'
     CHECK (delivery_eta_range IN ('15-30', '30-60', '60+')),
   is_open BOOLEAN DEFAULT true,
+  opening_hours JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -111,6 +113,7 @@ CREATE TABLE orders (
   offered_driver_id UUID REFERENCES drivers(id),
   offer_expires_at TIMESTAMPTZ,
   declined_driver_ids UUID[] NOT NULL DEFAULT '{}',
+  restaurant_ready_at TIMESTAMPTZ,
   status_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -125,6 +128,24 @@ CREATE TABLE order_items (
   price NUMERIC(10,2) NOT NULL,
   quantity INTEGER NOT NULL DEFAULT 1,
   image_url TEXT
+);
+
+-- Payout requests (restaurant / driver → admin)
+CREATE TABLE payment_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  payee_type TEXT NOT NULL CHECK (payee_type IN ('restaurant', 'driver')),
+  payee_user_id UUID NOT NULL REFERENCES profiles(id),
+  restaurant_id UUID REFERENCES restaurants(id) ON DELETE SET NULL,
+  driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+  amount NUMERIC(10,2) NOT NULL CHECK (amount >= 0),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'paid', 'rejected')),
+  qr_image_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ,
+  resolved_by UUID REFERENCES profiles(id),
+  UNIQUE (order_id, payee_type)
 );
 
 -- Order status history
@@ -360,6 +381,22 @@ CREATE POLICY "System can insert status history"
   ON order_status_history FOR INSERT TO authenticated
   WITH CHECK (true);
 
+-- Payment requests (payouts)
+ALTER TABLE payment_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Payees see own payment requests"
+  ON payment_requests FOR SELECT TO authenticated
+  USING (payee_user_id = auth.uid() OR get_user_role() = 'admin');
+CREATE POLICY "Payees create own payment requests"
+  ON payment_requests FOR INSERT TO authenticated
+  WITH CHECK (
+    payee_user_id = auth.uid()
+    AND get_user_role() IN ('restaurant', 'driver')
+  );
+CREATE POLICY "Admin update payment requests"
+  ON payment_requests FOR UPDATE TO authenticated
+  USING (get_user_role() = 'admin')
+  WITH CHECK (get_user_role() = 'admin');
+
 -- Storage buckets (run in dashboard or via API)
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('menu-images', 'menu-images', true);
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('restaurant-images', 'restaurant-images', true);
@@ -372,3 +409,4 @@ INSERT INTO payment_settings (qr_image_url) VALUES (NULL);
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE drivers;
 ALTER PUBLICATION supabase_realtime ADD TABLE order_status_history;
+ALTER PUBLICATION supabase_realtime ADD TABLE payment_requests;

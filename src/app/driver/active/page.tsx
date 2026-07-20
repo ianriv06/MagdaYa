@@ -145,7 +145,6 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
               {order.restaurants?.name}
             </h2>
             <p className="text-sm text-muted">
-              {order.profiles?.full_name} ·{" "}
               {formatCurrency(getDriverEarnings(order))}
             </p>
           </div>
@@ -153,6 +152,14 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
         </div>
 
         <div className="space-y-3 text-sm">
+          <div>
+            <p className="text-xs font-semibold text-muted uppercase tracking-wide">
+              Cliente
+            </p>
+            <p className="font-medium">
+              {order.profiles?.full_name || "Cliente"}
+            </p>
+          </div>
           <div>
             <p className="text-xs font-semibold text-muted uppercase tracking-wide">
               Recoger

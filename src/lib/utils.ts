@@ -1,6 +1,14 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { OrderStatus, UserRole, DeliveryEtaRange } from "@/lib/types";
+import type {
+  DayHours,
+  OpeningHours,
+  OrderStatus,
+  Restaurant,
+  UserRole,
+  DeliveryEtaRange,
+  Weekday,
+} from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -88,6 +96,111 @@ export function formatDeliveryEta(
   );
 }
 
+/** Weekday labels in display order (Mon → Sun). Value is JS getDay(). */
+export const WEEKDAY_OPTIONS: { day: Weekday; label: string }[] = [
+  { day: 1, label: "Lunes" },
+  { day: 2, label: "Martes" },
+  { day: 3, label: "Miércoles" },
+  { day: 4, label: "Jueves" },
+  { day: 5, label: "Viernes" },
+  { day: 6, label: "Sábado" },
+  { day: 0, label: "Domingo" },
+];
+
+const DEFAULT_DAY_HOURS: DayHours = {
+  closed: false,
+  open: "11:00",
+  close: "22:00",
+};
+
+export function defaultOpeningHours(): OpeningHours {
+  return {
+    0: { ...DEFAULT_DAY_HOURS },
+    1: { ...DEFAULT_DAY_HOURS },
+    2: { ...DEFAULT_DAY_HOURS },
+    3: { ...DEFAULT_DAY_HOURS },
+    4: { ...DEFAULT_DAY_HOURS },
+    5: { ...DEFAULT_DAY_HOURS },
+    6: { ...DEFAULT_DAY_HOURS },
+  };
+}
+
+function isValidTime(value: string) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function minutesFromMidnight(value: string) {
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+}
+
+export function normalizeOpeningHours(
+  raw: OpeningHours | null | undefined
+): OpeningHours {
+  const base = defaultOpeningHours();
+  if (!raw || typeof raw !== "object") return base;
+
+  for (const { day } of WEEKDAY_OPTIONS) {
+    const entry = (raw as Record<string, unknown>)[String(day)];
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Partial<DayHours>;
+    const open =
+      typeof e.open === "string" && isValidTime(e.open)
+        ? e.open
+        : DEFAULT_DAY_HOURS.open;
+    const close =
+      typeof e.close === "string" && isValidTime(e.close)
+        ? e.close
+        : DEFAULT_DAY_HOURS.close;
+    base[day] = {
+      closed: Boolean(e.closed),
+      open,
+      close,
+    };
+  }
+  return base;
+}
+
+/** Returns an error message if hours are invalid, otherwise null. */
+export function validateOpeningHours(hours: OpeningHours): string | null {
+  for (const { day, label } of WEEKDAY_OPTIONS) {
+    const d = hours[day];
+    if (d.closed) continue;
+    if (!isValidTime(d.open) || !isValidTime(d.close)) {
+      return `Horario inválido para ${label}`;
+    }
+    if (minutesFromMidnight(d.close) <= minutesFromMidnight(d.open)) {
+      return `${label}: la hora de cierre debe ser después de la apertura`;
+    }
+  }
+  return null;
+}
+
+export function isWithinOpeningHours(
+  hours: OpeningHours | null | undefined,
+  now = new Date()
+): boolean {
+  // Missing schedule → treat as always within hours (legacy rows)
+  if (!hours) return true;
+  const normalized = normalizeOpeningHours(hours);
+  const day = now.getDay() as Weekday;
+  const today = normalized[day];
+  if (today.closed) return false;
+  const current = now.getHours() * 60 + now.getMinutes();
+  const open = minutesFromMidnight(today.open);
+  const close = minutesFromMidnight(today.close);
+  return current >= open && current < close;
+}
+
+/** Manual is_open override + weekly schedule. */
+export function isRestaurantAcceptingOrders(
+  restaurant: Pick<Restaurant, "is_open" | "opening_hours">,
+  now = new Date()
+): boolean {
+  if (!restaurant.is_open) return false;
+  return isWithinOpeningHours(restaurant.opening_hours, now);
+}
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   placed: "Pedido realizado",
   money_paid: "Pago recibido por el comercio",
@@ -145,6 +258,12 @@ export const DRIVER_CLIENT_LOCATION_LABEL =
 export function getDriverEarnings(order: { delivery_fee?: number | null }) {
   const fee = Number(order.delivery_fee);
   return Number.isFinite(fee) && fee > 0 ? fee : DELIVERY_FEE;
+}
+
+/** Food subtotal owed to the restaurant (excludes delivery + platform fees). */
+export function getRestaurantEarnings(order: { subtotal?: number | null }) {
+  const n = Number(order.subtotal);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 /** Seconds a driver has to accept before the offer moves to someone else. */

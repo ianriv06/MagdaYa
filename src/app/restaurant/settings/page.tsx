@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { RestaurantLayout } from "@/components/restaurant/restaurant-layout";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { DeliveryEtaRange, Restaurant } from "@/lib/types";
+import type { DeliveryEtaRange, OpeningHours, Restaurant } from "@/lib/types";
 import {
   DELIVERY_ETA_OPTIONS,
   deliveryEtaToMinutes,
   normalizeDeliveryEtaRange,
+  normalizeOpeningHours,
+  validateOpeningHours,
 } from "@/lib/utils";
 import {
   fileToCompressedDataUrl,
@@ -22,6 +25,11 @@ import {
   LocationPicker,
   type PickedLocation,
 } from "@/components/map/location-picker";
+import { OpeningHoursEditor } from "@/components/restaurant/opening-hours-editor";
+import {
+  PaymentQrUploader,
+  uploadPaymentQr,
+} from "@/components/payments/payment-qr-uploader";
 import { Upload } from "lucide-react";
 
 export default function RestaurantSettingsPage() {
@@ -33,6 +41,7 @@ export default function RestaurantSettingsPage() {
 }
 
 function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
+  const { profile, user, refreshProfile } = useAuth();
   const supabase = createClient();
   const [name, setName] = useState(restaurant.name);
   const [description, setDescription] = useState(restaurant.description || "");
@@ -48,11 +57,16 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
       restaurant.eta_minutes
     )
   );
+  const [openingHours, setOpeningHours] = useState<OpeningHours>(() =>
+    normalizeOpeningHours(restaurant.opening_hours)
+  );
   const [isOpen, setIsOpen] = useState(restaurant.is_open);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState(
     restaurant.cover_url || restaurant.image_url || ""
   );
+  const [qrPreview, setQrPreview] = useState(profile?.payment_qr_url || "");
+  const [qrFile, setQrFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -78,9 +92,39 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    const hoursError = validateOpeningHours(openingHours);
+    if (hoursError) {
+      setError(hoursError);
+      return;
+    }
+    if (!qrPreview && !qrFile) {
+      setError("Tu QR de cobro es obligatorio");
+      return;
+    }
+
     setSaving(true);
 
     try {
+      if (user && (qrFile || qrPreview !== profile?.payment_qr_url)) {
+        const paymentQrUrl = qrFile
+          ? await uploadPaymentQr(user.id, qrFile)
+          : qrPreview;
+        const { error: qrErr } = await supabase
+          .from("profiles")
+          .update({ payment_qr_url: paymentQrUrl })
+          .eq("id", user.id);
+        if (qrErr && isMissingColumnError(qrErr, "payment_qr_url")) {
+          throw new Error(
+            "Falta la columna payment_qr_url. Ejecuta supabase/pagos.sql en Supabase."
+          );
+        }
+        if (qrErr) throw qrErr;
+        setQrPreview(paymentQrUrl);
+        setQrFile(null);
+        await refreshProfile();
+      }
+
       const payload: Record<string, unknown> = {
         name,
         description,
@@ -90,6 +134,7 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
         lng: location.lng,
         delivery_eta_range: deliveryEta,
         eta_minutes: deliveryEtaToMinutes(deliveryEta),
+        opening_hours: openingHours,
         is_open: isOpen,
       };
 
@@ -121,6 +166,20 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
           .update(withoutRange)
           .eq("id", restaurant.id);
         saveError = retry.error;
+      }
+
+      if (saveError && isMissingColumnError(saveError, "opening_hours")) {
+        const { opening_hours: _hours, ...withoutHours } = payload;
+        const retry = await supabase
+          .from("restaurants")
+          .update(withoutHours)
+          .eq("id", restaurant.id);
+        saveError = retry.error;
+        if (!saveError) {
+          throw new Error(
+            "Falta la columna opening_hours. Ejecuta supabase/restaurant-opening-hours.sql en Supabase."
+          );
+        }
       }
 
       if (saveError) throw saveError;
@@ -237,11 +296,22 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
         onChange={(e) => setDescription(e.target.value)}
       />
 
+      <OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
+
+      <PaymentQrUploader
+        value={qrPreview}
+        required
+        onChange={(url, file) => {
+          setQrPreview(url);
+          setQrFile(file ?? null);
+        }}
+      />
+
       <label className="flex items-center justify-between p-4 rounded-2xl bg-surface border border-border cursor-pointer">
         <div>
           <p className="font-semibold text-sm">Abierto para pedidos</p>
           <p className="text-xs text-muted">
-            Los clientes solo pueden pedir cuando estás abierto
+            Desactívalo para cerrar temporalmente, aunque estés en horario
           </p>
         </div>
         <input

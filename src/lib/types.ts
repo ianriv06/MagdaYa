@@ -17,8 +17,22 @@ export interface Profile {
   phone: string | null;
   role: UserRole;
   avatar_url: string | null;
+  payment_qr_url: string | null;
   created_at: string;
 }
+
+/** 0 = Sunday … 6 = Saturday (matches Date.getDay()). */
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface DayHours {
+  closed: boolean;
+  /** Local time "HH:MM" (24h), ignored when closed. */
+  open: string;
+  /** Local time "HH:MM" (24h), ignored when closed. */
+  close: string;
+}
+
+export type OpeningHours = Record<Weekday, DayHours>;
 
 export interface Restaurant {
   id: string;
@@ -36,6 +50,7 @@ export interface Restaurant {
   eta_minutes: number;
   delivery_eta_range: DeliveryEtaRange | null;
   is_open: boolean;
+  opening_hours: OpeningHours | null;
   created_at: string;
 }
 
@@ -86,6 +101,7 @@ export interface Order {
   offered_driver_id: string | null;
   offer_expires_at: string | null;
   declined_driver_ids: string[] | null;
+  restaurant_ready_at: string | null;
   status_updated_at: string;
   created_at: string;
   restaurants?: Restaurant;
@@ -108,6 +124,27 @@ export interface PaymentSettings {
   id: string;
   qr_image_url: string | null;
   updated_at: string;
+}
+
+export type PaymentRequestStatus = "pending" | "paid" | "rejected";
+export type PaymentPayeeType = "restaurant" | "driver";
+
+export interface PaymentRequest {
+  id: string;
+  order_id: string;
+  payee_type: PaymentPayeeType;
+  payee_user_id: string;
+  restaurant_id: string | null;
+  driver_id: string | null;
+  amount: number;
+  status: PaymentRequestStatus;
+  qr_image_url: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  orders?: Order;
+  restaurants?: Restaurant;
+  profiles?: Profile;
 }
 
 export interface CartItem {

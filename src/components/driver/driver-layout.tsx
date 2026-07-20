@@ -6,8 +6,13 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { cn } from "@/lib/utils";
-import { Package, Navigation } from "lucide-react";
+import { Package, Navigation, Wallet } from "lucide-react";
 import type { Driver } from "@/lib/types";
+import {
+  PaymentQrUploader,
+  uploadPaymentQr,
+} from "@/components/payments/payment-qr-uploader";
+import { isMissingColumnError } from "@/lib/receipt-upload";
 
 const nav = [
   {
@@ -20,6 +25,11 @@ const nav = [
     label: "Activo",
     icon: <Navigation className="size-[26px]" />,
   },
+  {
+    href: "/driver/pagos",
+    label: "Pagos",
+    icon: <Wallet className="size-[26px]" />,
+  },
 ];
 
 export function DriverLayout({
@@ -29,7 +39,7 @@ export function DriverLayout({
   title: string;
   children: (driver: Driver) => ReactNode;
 }) {
-  const { profile, loading, user } = useAuth();
+  const { profile, loading, user, refreshProfile } = useAuth();
   const [driver, setDriver] = useState<Driver | null>(null);
   const [ready, setReady] = useState(false);
   const router = useRouter();
@@ -61,7 +71,6 @@ export function DriverLayout({
       setDriver(data);
       setReady(true);
 
-      // Update location periodically
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(async (pos) => {
           await supabase
@@ -86,10 +95,87 @@ export function DriverLayout({
     );
   }
 
+  if (!profile?.payment_qr_url) {
+    return (
+      <DashboardShell title="QR de cobro" nav={nav} roleLabel="Repartidor">
+        <SetupDriverPaymentQr onSaved={() => refreshProfile()} />
+      </DashboardShell>
+    );
+  }
+
   return (
     <DashboardShell title={title} nav={nav} roleLabel="Repartidor">
       {children(driver)}
     </DashboardShell>
+  );
+}
+
+function SetupDriverPaymentQr({ onSaved }: { onSaved: () => void }) {
+  const { user, refreshProfile } = useAuth();
+  const supabase = createClient();
+  const [qrPreview, setQrPreview] = useState("");
+  const [qrFile, setQrFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (!qrFile && !qrPreview) {
+      setError("Sube la foto de tu QR de cobro");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const url = qrFile
+        ? await uploadPaymentQr(user.id, qrFile)
+        : qrPreview;
+      const { error: qrErr } = await supabase
+        .from("profiles")
+        .update({ payment_qr_url: url })
+        .eq("id", user.id);
+      if (qrErr && isMissingColumnError(qrErr, "payment_qr_url")) {
+        throw new Error(
+          "Falta la columna payment_qr_url. Ejecuta supabase/pagos.sql en Supabase."
+        );
+      }
+      if (qrErr) throw qrErr;
+      await refreshProfile();
+      onSaved();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al guardar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md animate-slide-up">
+      <h2 className="font-display text-xl font-bold mb-2">Tu QR de cobro</h2>
+      <p className="text-muted text-sm mb-6">
+        Para empezar a repartir, sube la foto del QR con el que quieres recibir
+        tus pagos por entregas.
+      </p>
+      <form onSubmit={submit} className="space-y-4">
+        <PaymentQrUploader
+          value={qrPreview}
+          required
+          onChange={(url, file) => {
+            setQrPreview(url);
+            setQrFile(file ?? null);
+          }}
+        />
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full h-12 rounded-2xl bg-brand text-white font-semibold disabled:opacity-50"
+        >
+          {loading ? "Guardando…" : "Guardar QR"}
+        </button>
+      </form>
+    </div>
   );
 }
 

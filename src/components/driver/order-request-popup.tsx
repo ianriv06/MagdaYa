@@ -9,7 +9,7 @@ import {
   getDriverEarnings,
 } from "@/lib/utils";
 import type { Order } from "@/lib/types";
-import { MapPin, Store } from "lucide-react";
+import { MapPin, Store, User } from "lucide-react";
 
 const COUNTDOWN_SECONDS = DRIVER_OFFER_SECONDS;
 const CIRCLE_SIZE = 72;
@@ -120,6 +120,17 @@ export function OrderRequestPopup({
       </div>
 
       <div className="space-y-2.5 text-sm rounded-2xl bg-subtle/80 p-3.5">
+        <div className="flex items-start gap-2">
+          <User className="size-4 text-brand mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+              Cliente
+            </p>
+            <p className="font-medium leading-snug">
+              {order.profiles?.full_name || "Cliente"}
+            </p>
+          </div>
+        </div>
         <div className="flex items-start gap-2">
           <Store className="size-4 text-danger mt-0.5 shrink-0" />
           <div className="min-w-0">
