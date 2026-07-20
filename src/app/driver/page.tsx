@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 
 export default function DriverAvailablePage() {
   return (
-    <DriverLayout title="Available requests">
+    <DriverLayout title="Solicitudes disponibles">
       {(driver) => <AvailableList driver={driver} />}
     </DriverLayout>
   );
@@ -76,22 +76,23 @@ function AvailableList({ driver }: { driver: Driver }) {
     <div className="space-y-4 animate-slide-up">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">
-          {orders.length} request{orders.length !== 1 ? "s" : ""} nearby
+          {orders.length}{" "}
+          {orders.length === 1 ? "solicitud" : "solicitudes"} cerca
         </p>
         <DriverAvailabilityToggle driver={driver} />
       </div>
 
       {!driver.is_available && (
         <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
-          You&apos;re offline. Go online to receive delivery requests.
+          Estás desconectado. Conéctate para recibir entregas.
         </div>
       )}
 
       {orders.length === 0 ? (
         <div className="text-center py-16 text-muted">
-          <p className="font-medium">No available requests</p>
+          <p className="font-medium">No hay solicitudes</p>
           <p className="text-sm mt-1">
-            New deliveries appear here when ready for pickup.
+            Aparecerán aquí cuando estén listas para recoger.
           </p>
         </div>
       ) : (
@@ -109,11 +110,11 @@ function AvailableList({ driver }: { driver: Driver }) {
                   <p className="text-sm text-muted">
                     {formatCurrency(order.total)} ·{" "}
                     {order.order_items?.reduce((s, i) => s + i.quantity, 0)}{" "}
-                    items
+                    productos
                   </p>
                 </div>
                 <span className="text-xs font-semibold bg-brand-light text-brand-dark px-2.5 py-1 rounded-full">
-                  New
+                  Nuevo
                 </span>
               </div>
 
@@ -134,14 +135,14 @@ function AvailableList({ driver }: { driver: Driver }) {
                   className="flex-1"
                   onClick={() => decline(order.id)}
                 >
-                  Decline
+                  Rechazar
                 </Button>
                 <Button
                   className="flex-1"
                   loading={loadingId === order.id}
                   onClick={() => accept(order.id)}
                 >
-                  Accept
+                  Aceptar
                 </Button>
               </div>
             </div>

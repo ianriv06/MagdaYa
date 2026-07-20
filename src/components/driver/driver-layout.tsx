@@ -11,12 +11,12 @@ import type { Driver } from "@/lib/types";
 const nav = [
   {
     href: "/driver",
-    label: "Available",
+    label: "Disponibles",
     icon: <Package className="size-5" />,
   },
   {
     href: "/driver/active",
-    label: "Active",
+    label: "Activo",
     icon: <Navigation className="size-5" />,
   },
 ];
@@ -80,13 +80,13 @@ export function DriverLayout({
   if (loading || !ready || !driver) {
     return (
       <div className="min-h-dvh flex items-center justify-center text-muted">
-        Loading…
+        Cargando…
       </div>
     );
   }
 
   return (
-    <DashboardShell title={title} nav={nav} roleLabel="Driver">
+    <DashboardShell title={title} nav={nav} roleLabel="Repartidor">
       {children(driver)}
     </DashboardShell>
   );
@@ -115,7 +115,7 @@ export function DriverAvailabilityToggle({ driver }: { driver: Driver }) {
       }`}
     >
       <Bike className="size-3.5" />
-      {available ? "Online" : "Offline"}
+      {available ? "En línea" : "Desconectado"}
     </button>
   );
 }

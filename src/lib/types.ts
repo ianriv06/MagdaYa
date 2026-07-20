@@ -1,4 +1,5 @@
 export type UserRole = "customer" | "restaurant" | "driver" | "admin";
+export type DeliveryEtaRange = "15-30" | "30-60" | "60+";
 export type OrderType = "delivery" | "pickup";
 export type OrderStatus =
   | "placed"
@@ -33,6 +34,7 @@ export interface Restaurant {
   rating: number;
   delivery_fee: number;
   eta_minutes: number;
+  delivery_eta_range: DeliveryEtaRange | null;
   is_open: boolean;
   created_at: string;
 }
@@ -79,6 +81,8 @@ export interface Order {
   delivery_lat: number | null;
   delivery_lng: number | null;
   customer_notes: string | null;
+  whatsapp: string | null;
+  payment_receipt_url: string | null;
   status_updated_at: string;
   created_at: string;
   restaurants?: Restaurant;

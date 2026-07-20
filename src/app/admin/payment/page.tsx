@@ -11,7 +11,7 @@ import { QrCode, Upload } from "lucide-react";
 
 export default function AdminPaymentPage() {
   return (
-    <AdminLayout title="Payment QR">
+    <AdminLayout title="QR de pago">
       <PaymentQRManager />
     </AdminLayout>
   );
@@ -42,7 +42,7 @@ function PaymentQRManager() {
 
   const save = async () => {
     if (!file && !settings?.qr_image_url) {
-      setMessage("Please select a QR image");
+      setMessage("Selecciona una imagen del QR");
       return;
     }
 
@@ -93,9 +93,9 @@ function PaymentQRManager() {
 
       setPreview(qr_image_url || "");
       setFile(null);
-      setMessage("Payment QR updated successfully");
+      setMessage("QR de pago actualizado");
     } catch (err: unknown) {
-      setMessage(err instanceof Error ? err.message : "Upload failed");
+      setMessage(err instanceof Error ? err.message : "Error al subir");
     } finally {
       setLoading(false);
     }
@@ -106,25 +106,25 @@ function PaymentQRManager() {
       <div className="rounded-3xl bg-surface border border-border p-5 space-y-4">
         <div className="flex items-center gap-2">
           <QrCode className="size-5 text-brand" />
-          <h2 className="font-semibold">Global payment QR</h2>
+          <h2 className="font-semibold">QR de pago global</h2>
         </div>
         <p className="text-sm text-muted">
-          This single QR code is shown to every customer at checkout. Upload or
-          replace it anytime.
+          Este código QR se muestra a todos los clientes al pagar. Puedes
+          cambiarlo cuando quieras.
         </p>
 
         <label className="relative block h-56 rounded-2xl border-2 border-dashed border-border bg-canvas overflow-hidden cursor-pointer hover:border-brand transition-colors">
           {preview ? (
             <Image
               src={preview}
-              alt="Payment QR"
+              alt="QR de pago"
               fill
               className="object-contain p-4"
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-muted text-sm">
               <Upload className="size-8 mb-2 opacity-40" />
-              Tap to upload QR image
+              Toca para subir imagen del QR
             </div>
           )}
           <input
@@ -144,7 +144,7 @@ function PaymentQRManager() {
         {message && (
           <p
             className={`text-sm ${
-              message.includes("success") ? "text-brand" : "text-danger"
+              message.includes("actualizado") ? "text-brand" : "text-danger"
             }`}
           >
             {message}
@@ -152,7 +152,7 @@ function PaymentQRManager() {
         )}
 
         <Button className="w-full" onClick={save} loading={loading}>
-          Save QR code
+          Guardar código QR
         </Button>
       </div>
     </div>

@@ -13,6 +13,16 @@ interface NavItem {
   icon: ReactNode;
 }
 
+/** Only the most specific matching tab is active (avoids parent+child both highlighted). */
+function isNavActive(pathname: string, href: string, allHrefs: string[]) {
+  const matches = (h: string) =>
+    pathname === h || pathname.startsWith(`${h}/`);
+  if (!matches(href)) return false;
+  return !allHrefs.some(
+    (other) => other !== href && other.length > href.length && matches(other)
+  );
+}
+
 export function DashboardShell({
   title,
   nav,
@@ -27,6 +37,7 @@ export function DashboardShell({
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
   const router = useRouter();
+  const hrefs = nav.map((item) => item.href);
 
   const handleSignOut = async () => {
     await signOut();
@@ -45,21 +56,24 @@ export function DashboardShell({
           </p>
         </div>
         <nav className="flex-1 p-4 space-y-1">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                pathname === item.href || pathname.startsWith(item.href + "/")
-                  ? "bg-brand text-white"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) => {
+            const active = isNavActive(pathname, item.href, hrefs);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
+                  active
+                    ? "bg-brand text-white"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="p-4 border-t border-white/10">
           <p className="text-sm truncate px-3 mb-2">{profile?.full_name}</p>
@@ -67,7 +81,7 @@ export function DashboardShell({
             onClick={handleSignOut}
             className="flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white w-full"
           >
-            <LogOut className="size-4" /> Sign out
+            <LogOut className="size-4" /> Cerrar sesión
           </button>
         </div>
       </aside>
@@ -78,7 +92,7 @@ export function DashboardShell({
           <button
             onClick={handleSignOut}
             className="md:hidden text-muted p-2"
-            aria-label="Sign out"
+            aria-label="Cerrar sesión"
           >
             <LogOut className="size-5" />
           </button>
@@ -89,19 +103,27 @@ export function DashboardShell({
         <nav className="fixed bottom-0 inset-x-0 z-50 bg-surface border-t border-border safe-bottom md:hidden">
           <div className="flex items-center justify-around h-16">
             {nav.map((item) => {
-              const active =
-                pathname === item.href || pathname.startsWith(item.href + "/");
+              const active = isNavActive(pathname, item.href, hrefs);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 px-2 min-w-[64px]",
+                    "flex flex-col items-center gap-0.5 px-2 min-w-[64px] transition-colors",
                     active ? "text-brand" : "text-muted"
                   )}
                 >
-                  {item.icon}
-                  <span className="text-[10px] font-medium">{item.label}</span>
+                  <span className={cn(active ? "text-brand" : "text-muted")}>
+                    {item.icon}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[10px] font-medium",
+                      active ? "text-brand" : "text-muted"
+                    )}
+                  >
+                    {item.label}
+                  </span>
                 </Link>
               );
             })}

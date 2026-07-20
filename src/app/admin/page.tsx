@@ -13,7 +13,7 @@ import { Check, DollarSign } from "lucide-react";
 
 export default function AdminOrdersPage() {
   return (
-    <AdminLayout title="All orders">
+    <AdminLayout title="Todos los pedidos">
       <AdminOrders />
     </AdminLayout>
   );
@@ -76,9 +76,9 @@ function AdminOrders() {
     <div className="space-y-6 animate-slide-up">
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Awaiting payment", value: counts.placed },
-          { label: "Needs confirm", value: counts.money_paid },
-          { label: "In flight", value: counts.active },
+          { label: "Esperando pago", value: counts.placed },
+          { label: "Por confirmar", value: counts.money_paid },
+          { label: "En curso", value: counts.active },
         ].map((s) => (
           <div
             key={s.label}
@@ -110,14 +110,14 @@ function AdminOrders() {
                 : "bg-surface text-muted border-border"
             }`}
           >
-            {f === "all" ? "All" : ORDER_STATUS_LABELS[f]}
+            {f === "all" ? "Todos" : ORDER_STATUS_LABELS[f]}
           </button>
         ))}
       </div>
 
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <p className="text-center text-muted py-12 text-sm">No orders</p>
+          <p className="text-center text-muted py-12 text-sm">Aún no hay pedidos</p>
         ) : (
           filtered.map((order) => (
             <div
@@ -140,9 +140,9 @@ function AdminOrders() {
                       {order.profiles?.full_name} ·{" "}
                       {formatCurrency(order.total)} ·{" "}
                       {order.order_type === "delivery"
-                        ? "Delivery"
-                        : "Pickup"}{" "}
-                      · {new Date(order.created_at).toLocaleString()}
+                        ? "Domicilio"
+                        : "Para recoger"}{" "}
+                      · {new Date(order.created_at).toLocaleString("es-MX")}
                     </p>
                   </div>
                   <StatusBadge status={order.status} />
@@ -157,7 +157,7 @@ function AdminOrders() {
                   loading={updating === order.id}
                 >
                   <DollarSign className="size-4" />
-                  Mark Money Paid to Commerce
+                  Marcar pago recibido por el comercio
                 </Button>
               )}
 
@@ -168,13 +168,13 @@ function AdminOrders() {
                   loading={updating === order.id}
                 >
                   <Check className="size-4" />
-                  Confirm order
+                  Confirmar pedido
                 </Button>
               )}
 
               {order.status === "confirmed" && (
                 <p className="text-xs text-muted text-center">
-                  Auto-moved to In Progress — drivers notified
+                  Pasó automáticamente a En preparación — repartidores notificados
                 </p>
               )}
 
@@ -197,8 +197,39 @@ function AdminOrders() {
                   </div>
                   {order.delivery_address && (
                     <p className="text-sm text-muted">
-                      Address: {order.delivery_address}
+                      Dirección: {order.delivery_address}
                     </p>
+                  )}
+                  {order.whatsapp && (
+                    <p className="text-sm">
+                      <span className="text-muted">WhatsApp: </span>
+                      <a
+                        href={`https://wa.me/${order.whatsapp.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-brand"
+                      >
+                        {order.whatsapp}
+                      </a>
+                    </p>
+                  )}
+                  {order.payment_receipt_url && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted">Comprobante de pago</p>
+                      <a
+                        href={order.payment_receipt_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative block w-full max-w-xs aspect-[4/3] rounded-xl overflow-hidden border border-border bg-subtle"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={order.payment_receipt_url}
+                          alt="Comprobante"
+                          className="w-full h-full object-contain"
+                        />
+                      </a>
+                    </div>
                   )}
                   <OrderTimeline status={order.status} />
 
@@ -217,7 +248,7 @@ function AdminOrders() {
                                 updateStatus(order.id, "delivered")
                               }
                             >
-                              Mark picked up / delivered
+                              Marcar recogido / entregado
                             </Button>
                           )}
                         <Button
@@ -227,7 +258,7 @@ function AdminOrders() {
                             updateStatus(order.id, "cancelled")
                           }
                         >
-                          Cancel order
+                          Cancelar pedido
                         </Button>
                       </div>
                     )}

@@ -12,11 +12,11 @@ export function ConfigBanner() {
 
   return (
     <div className="bg-amber-500 text-amber-950 text-center text-xs sm:text-sm font-medium px-4 py-2">
-      Configure Supabase: copy{" "}
+      Configura Supabase: copia{" "}
       <code className="font-mono bg-amber-600/20 px-1 rounded">.env.example</code>{" "}
       →{" "}
       <code className="font-mono bg-amber-600/20 px-1 rounded">.env.local</code>{" "}
-      and run the SQL in{" "}
+      y ejecuta el SQL en{" "}
       <code className="font-mono bg-amber-600/20 px-1 rounded">supabase/</code>
     </div>
   );

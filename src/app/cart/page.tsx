@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/store/cart";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, DELIVERY_FEE } from "@/lib/utils";
 import { Minus, Plus, Trash2, Bike, Store } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 
@@ -23,23 +23,23 @@ export default function CartPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const deliveryFee = orderType === "delivery" ? 2.99 : 0;
+  const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
   const total = subtotal() + deliveryFee;
 
   if (itemCount() === 0) {
     return (
-      <div className="min-h-dvh pb-20">
+      <div className="min-h-dvh bg-white pb-[72px]">
         <DesktopHeader />
         <div className="flex flex-col items-center justify-center py-24 px-4">
-          <div className="size-20 rounded-full bg-brand-light flex items-center justify-center mb-4">
-            <Store className="size-8 text-brand" />
+          <div className="size-16 rounded-full bg-subtle flex items-center justify-center mb-4">
+            <Store className="size-7 text-ink" />
           </div>
-          <h1 className="font-display text-xl font-bold">Your cart is empty</h1>
+          <h1 className="text-xl font-bold">Tu carrito está vacío</h1>
           <p className="text-muted text-sm mt-1 mb-6">
-            Add something delicious to get started
+            Agrega algo rico para empezar
           </p>
           <Link href="/">
-            <Button>Browse restaurants</Button>
+            <Button>Ver restaurantes</Button>
           </Link>
         </div>
         <CustomerNav />
@@ -50,42 +50,37 @@ export default function CartPage() {
   const restaurantName = items[0]?.restaurantName;
 
   return (
-    <div className="min-h-dvh pb-28 md:pb-8">
+    <div className="min-h-dvh bg-white pb-[100px] md:pb-8">
       <DesktopHeader />
-      <div className="max-w-lg mx-auto px-4 py-6 animate-slide-up">
-        <h1 className="font-display text-2xl font-bold mb-1">Cart</h1>
-        <p className="text-muted text-sm mb-6">From {restaurantName}</p>
+      <div className="max-w-lg mx-auto px-4 py-5 animate-slide-up">
+        <h1 className="text-[22px] font-bold tracking-tight mb-0.5">Carrito</h1>
+        <p className="text-muted text-[13px] mb-5">De {restaurantName}</p>
 
-        <div className="flex gap-2 mb-6 p-1 bg-canvas rounded-2xl border border-border">
+        <div className="inline-flex p-1 rounded-full bg-subtle mb-5 w-full">
           {(
             [
-              { id: "delivery", label: "Delivery", icon: Bike },
-              { id: "pickup", label: "Pickup", icon: Store },
+              { id: "delivery", label: "Domicilio", icon: Bike },
+              { id: "pickup", label: "Para recoger", icon: Store },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setOrderType(id)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-all",
-                orderType === id
-                  ? "bg-surface text-ink shadow-sm"
-                  : "text-muted"
+                "flex-1 flex items-center justify-center gap-1.5 h-9 rounded-full text-[13px] font-bold transition-colors",
+                orderType === id ? "bg-ink text-white" : "text-ink/70"
               )}
             >
-              <Icon className="size-4" />
+              <Icon className="size-3.5" />
               {label}
             </button>
           ))}
         </div>
 
-        <div className="space-y-3 mb-6">
+        <div className="divide-y divide-border mb-5">
           {items.map((item) => (
-            <div
-              key={item.menuItem.id}
-              className="flex gap-3 p-3 rounded-2xl bg-surface border border-border"
-            >
-              <div className="relative size-16 rounded-xl overflow-hidden bg-canvas shrink-0">
+            <div key={item.menuItem.id} className="flex gap-3 py-4">
+              <div className="relative size-16 rounded-lg overflow-hidden bg-subtle shrink-0">
                 {item.menuItem.image_url && (
                   <Image
                     src={item.menuItem.image_url}
@@ -98,17 +93,17 @@ export default function CartPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between gap-2">
-                  <h3 className="font-semibold text-sm truncate">
+                  <h3 className="font-bold text-[15px] truncate">
                     {item.menuItem.name}
                   </h3>
                   <button
                     onClick={() => removeItem(item.menuItem.id)}
-                    className="text-muted hover:text-danger shrink-0"
+                    className="text-muted shrink-0 active:text-danger"
                   >
                     <Trash2 className="size-4" />
                   </button>
                 </div>
-                <p className="text-brand font-bold text-sm mt-0.5">
+                <p className="font-bold text-[14px] mt-0.5">
                   {formatCurrency(Number(item.menuItem.price) * item.quantity)}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
@@ -116,7 +111,7 @@ export default function CartPage() {
                     onClick={() =>
                       updateQuantity(item.menuItem.id, item.quantity - 1)
                     }
-                    className="size-7 rounded-full bg-canvas border border-border flex items-center justify-center"
+                    className="size-7 rounded-full bg-subtle flex items-center justify-center"
                   >
                     <Minus className="size-3" />
                   </button>
@@ -127,7 +122,7 @@ export default function CartPage() {
                     onClick={() =>
                       updateQuantity(item.menuItem.id, item.quantity + 1)
                     }
-                    className="size-7 rounded-full bg-brand text-white flex items-center justify-center"
+                    className="size-7 rounded-full bg-ink text-white flex items-center justify-center"
                   >
                     <Plus className="size-3" />
                   </button>
@@ -137,24 +132,24 @@ export default function CartPage() {
           ))}
         </div>
 
-        <div className="rounded-2xl bg-surface border border-border p-4 space-y-2 mb-6">
-          <div className="flex justify-between text-sm">
+        <div className="space-y-2 mb-6 text-[14px]">
+          <div className="flex justify-between">
             <span className="text-muted">Subtotal</span>
-            <span>{formatCurrency(subtotal())}</span>
+            <span className="font-semibold">{formatCurrency(subtotal())}</span>
           </div>
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between">
             <span className="text-muted">
-              {orderType === "delivery" ? "Delivery fee" : "Pickup"}
+              {orderType === "delivery" ? "Costo de envío" : "Para recoger"}
             </span>
-            <span>
+            <span className="font-semibold">
               {orderType === "delivery"
                 ? formatCurrency(deliveryFee)
-                : "Free"}
+                : "Gratis"}
             </span>
           </div>
-          <div className="border-t border-border pt-2 flex justify-between font-bold">
+          <div className="border-t border-border pt-3 flex justify-between text-[16px] font-bold">
             <span>Total</span>
-            <span className="text-brand">{formatCurrency(total)}</span>
+            <span>{formatCurrency(total)}</span>
           </div>
         </div>
 
@@ -169,7 +164,7 @@ export default function CartPage() {
             router.push("/checkout");
           }}
         >
-          Continue to checkout
+          Ir a pagar
         </Button>
       </div>
       <CustomerNav />

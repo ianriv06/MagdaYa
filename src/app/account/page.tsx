@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
 import { Button } from "@/components/ui/button";
-import { getDashboardPath } from "@/lib/utils";
+import { getDashboardPath, ROLE_LABELS } from "@/lib/utils";
+import type { UserRole } from "@/lib/types";
 
 export default function AccountPage() {
   const { user, profile, loading, signOut } = useAuth();
@@ -13,15 +14,15 @@ export default function AccountPage() {
     <div className="min-h-dvh pb-20">
       <DesktopHeader />
       <div className="max-w-lg mx-auto px-4 py-6 animate-slide-up">
-        <h1 className="font-display text-2xl font-bold mb-6">Account</h1>
+        <h1 className="font-display text-2xl font-bold mb-6">Cuenta</h1>
 
         {loading ? (
           <div className="h-32 rounded-2xl bg-surface border border-border animate-pulse" />
         ) : !user ? (
           <div className="text-center py-12">
-            <p className="text-muted mb-4">Sign in to manage your account</p>
+            <p className="text-muted mb-4">Inicia sesión para administrar tu cuenta</p>
             <Link href="/auth">
-              <Button>Sign in</Button>
+              <Button>Iniciar sesión</Button>
             </Link>
           </div>
         ) : (
@@ -35,15 +36,18 @@ export default function AccountPage() {
               {profile?.phone && (
                 <p className="text-sm text-muted">{profile.phone}</p>
               )}
-              <p className="text-xs text-muted mt-2 capitalize">
-                Role: {profile?.role}
+              <p className="text-xs text-muted mt-2">
+                Rol:{" "}
+                {profile?.role
+                  ? ROLE_LABELS[profile.role as UserRole] || profile.role
+                  : ""}
               </p>
             </div>
 
             {profile && profile.role !== "customer" && (
               <Link href={getDashboardPath(profile.role)}>
                 <Button variant="outline" className="w-full">
-                  Go to {profile.role} dashboard
+                  Ir al panel de {ROLE_LABELS[profile.role as UserRole]}
                 </Button>
               </Link>
             )}
@@ -53,7 +57,7 @@ export default function AccountPage() {
               className="w-full text-danger"
               onClick={() => signOut()}
             >
-              Sign out
+              Cerrar sesión
             </Button>
           </div>
         )}

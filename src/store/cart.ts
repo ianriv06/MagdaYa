@@ -11,6 +11,7 @@ interface CartState {
   deliveryLat: number | null;
   deliveryLng: number | null;
   notes: string;
+  whatsapp: string;
   addItem: (menuItem: MenuItem, restaurantId: string, restaurantName: string) => void;
   removeItem: (menuItemId: string) => void;
   updateQuantity: (menuItemId: string, quantity: number) => void;
@@ -18,6 +19,7 @@ interface CartState {
   setOrderType: (type: "delivery" | "pickup") => void;
   setDeliveryAddress: (address: string, lat?: number, lng?: number) => void;
   setNotes: (notes: string) => void;
+  setWhatsapp: (whatsapp: string) => void;
   subtotal: () => number;
   itemCount: () => number;
   restaurantId: () => string | null;
@@ -32,15 +34,16 @@ export const useCart = create<CartState>()(
       deliveryLat: null,
       deliveryLng: null,
       notes: "",
+      whatsapp: "",
 
       addItem: (menuItem, restaurantId, restaurantName) => {
         const state = get();
         const currentRestaurant = state.restaurantId();
 
         if (currentRestaurant && currentRestaurant !== restaurantId) {
-          if (
+            if (
             !confirm(
-              "Your cart has items from another restaurant. Clear cart and add this item?"
+              "Tu carrito tiene productos de otro restaurante. ¿Vaciar carrito y agregar este producto?"
             )
           ) {
             return;
@@ -87,6 +90,7 @@ export const useCart = create<CartState>()(
         set({
           items: [],
           notes: "",
+          whatsapp: "",
           deliveryAddress: "",
           deliveryLat: null,
           deliveryLng: null,
@@ -100,6 +104,7 @@ export const useCart = create<CartState>()(
           deliveryLng: lng ?? null,
         }),
       setNotes: (notes) => set({ notes }),
+      setWhatsapp: (whatsapp) => set({ whatsapp }),
 
       subtotal: () =>
         get().items.reduce(

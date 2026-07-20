@@ -9,7 +9,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
   if (status === "cancelled") {
     return (
       <div className="rounded-2xl bg-red-50 p-4 text-center text-danger font-medium">
-        This order was cancelled
+        Este pedido fue cancelado
       </div>
     );
   }
@@ -58,7 +58,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
               </p>
               {active && (
                 <p className="text-xs text-brand font-medium mt-0.5">
-                  Current status
+                  Estado actual
                 </p>
               )}
             </div>

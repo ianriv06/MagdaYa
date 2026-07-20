@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/lib/utils";
 import type { MenuItem, MenuCategory } from "@/lib/types";
-import { Plus, X, ToggleLeft, ToggleRight, Upload } from "lucide-react";
+import { Plus, X, ToggleLeft, ToggleRight, Upload, Pencil } from "lucide-react";
 
 export default function RestaurantMenuPage() {
   return (
-    <RestaurantLayout title="Menu">
+    <RestaurantLayout title="Menú">
       {(restaurant) => <MenuManager restaurantId={restaurant.id} />}
     </RestaurantLayout>
   );
@@ -24,6 +24,7 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -56,6 +57,36 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId]);
 
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingItem(null);
+    setName("");
+    setDescription("");
+    setPrice("");
+    setCategoryId("");
+    setImageFile(null);
+    setImagePreview("");
+    setError("");
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const openEdit = (item: MenuItem) => {
+    setEditingItem(item);
+    setName(item.name);
+    setDescription(item.description || "");
+    setPrice(String(item.price));
+    setCategoryId(item.category_id || "");
+    setImageFile(null);
+    setImagePreview(item.image_url || "");
+    setError("");
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const addCategory = async () => {
     if (!newCategory.trim()) return;
     const { data } = await supabase
@@ -87,39 +118,51 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
     return publicUrl;
   };
 
-  const createItem = async (e: React.FormEvent) => {
+  const saveItem = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      let image_url: string | null = null;
+      let image_url: string | null = editingItem?.image_url || null;
       if (imageFile) {
         image_url = await uploadImage(imageFile);
-      } else {
+      } else if (!editingItem) {
         image_url = `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80`;
       }
 
-      const { error: err } = await supabase.from("menu_items").insert({
-        restaurant_id: restaurantId,
+      const payload = {
         category_id: categoryId || null,
         name,
         description: description || null,
         price: parseFloat(price),
         image_url,
-        is_available: true,
-      });
-      if (err) throw err;
+      };
 
-      setShowForm(false);
-      setName("");
-      setDescription("");
-      setPrice("");
-      setCategoryId("");
-      setImageFile(null);
-      setImagePreview("");
+      if (editingItem) {
+        const { error: err } = await supabase
+          .from("menu_items")
+          .update(payload)
+          .eq("id", editingItem.id);
+        if (err) throw err;
+      } else {
+        const { error: err } = await supabase.from("menu_items").insert({
+          restaurant_id: restaurantId,
+          ...payload,
+          is_available: true,
+        });
+        if (err) throw err;
+      }
+
+      resetForm();
       await load();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to add item");
+      setError(
+        err instanceof Error
+          ? err.message
+          : editingItem
+            ? "Error al guardar cambios"
+            : "Error al agregar platillo"
+      );
     } finally {
       setLoading(false);
     }
@@ -138,46 +181,49 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
   };
 
   const deleteItem = async (id: string) => {
-    if (!confirm("Delete this menu item?")) return;
+    if (!confirm("¿Eliminar este platillo?")) return;
     await supabase.from("menu_items").delete().eq("id", id);
     setItems(items.filter((i) => i.id !== id));
+    if (editingItem?.id === id) resetForm();
   };
 
   return (
     <div className="space-y-4 animate-slide-up">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-muted">{items.length} items</p>
-        <Button size="sm" onClick={() => setShowForm(true)}>
-          <Plus className="size-4" /> Add item
+        <p className="text-sm text-muted">{items.length} productos</p>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="size-4" /> Agregar
         </Button>
       </div>
 
       {showForm && (
         <form
-          onSubmit={createItem}
+          onSubmit={saveItem}
           className="rounded-3xl bg-surface border border-border p-5 space-y-4"
         >
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold">New menu item</h3>
-            <button type="button" onClick={() => setShowForm(false)}>
+            <h3 className="font-semibold">
+              {editingItem ? "Editar platillo" : "Nuevo platillo"}
+            </h3>
+            <button type="button" onClick={resetForm}>
               <X className="size-5 text-muted" />
             </button>
           </div>
 
           <label className="block">
-            <span className="text-sm font-medium mb-1.5 block">Photo</span>
+            <span className="text-sm font-medium mb-1.5 block">Foto</span>
             <div className="relative h-36 rounded-2xl border-2 border-dashed border-border bg-canvas flex items-center justify-center overflow-hidden cursor-pointer hover:border-brand transition-colors">
               {imagePreview ? (
                 <Image
                   src={imagePreview}
-                  alt="Preview"
+                  alt="Vista previa"
                   fill
                   className="object-cover"
                 />
               ) : (
                 <div className="text-center text-muted text-sm">
                   <Upload className="size-6 mx-auto mb-1" />
-                  Tap to upload
+                  Toca para subir
                 </div>
               )}
               <input
@@ -197,20 +243,20 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
 
           <Input
             id="item-name"
-            label="Name"
+            label="Nombre"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
           <Textarea
             id="item-desc"
-            label="Description"
+            label="Descripción"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
           <Input
             id="item-price"
-            label="Price"
+            label="Precio"
             type="number"
             step="0.01"
             min="0"
@@ -220,13 +266,13 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
           />
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Category</label>
+            <label className="text-sm font-medium">Categoría</label>
             <select
               className="w-full h-12 px-4 rounded-2xl border-2 border-border bg-surface focus:outline-none focus:border-brand"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              <option value="">Uncategorized</option>
+              <option value="">Sin categoría</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -236,19 +282,24 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
             <div className="flex gap-2 mt-2">
               <input
                 className="flex-1 h-10 px-3 rounded-xl border-2 border-border text-sm"
-                placeholder="New category"
+                placeholder="Nueva categoría"
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
               />
-              <Button type="button" variant="outline" size="sm" onClick={addCategory}>
-                Add
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addCategory}
+              >
+                Agregar
               </Button>
             </div>
           </div>
 
           {error && <p className="text-sm text-danger">{error}</p>}
           <Button type="submit" className="w-full" loading={loading}>
-            Save item
+            {editingItem ? "Guardar cambios" : "Guardar platillo"}
           </Button>
         </form>
       )}
@@ -278,28 +329,35 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
                 </span>
               </div>
               <p className="text-xs text-muted line-clamp-1 mt-0.5">
-                {item.description || "No description"}
+                {item.description || "Sin descripción"}
               </p>
-              <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2">
                 <button
                   onClick={() => toggleAvailable(item)}
                   className="flex items-center gap-1 text-xs font-medium"
                 >
                   {item.is_available ? (
                     <>
-                      <ToggleRight className="size-5 text-brand" /> Available
+                      <ToggleRight className="size-5 text-brand" /> Disponible
                     </>
                   ) : (
                     <>
-                      <ToggleLeft className="size-5 text-muted" /> Unavailable
+                      <ToggleLeft className="size-5 text-muted" /> No disponible
                     </>
                   )}
+                </button>
+                <button
+                  onClick={() => openEdit(item)}
+                  className="flex items-center gap-1 text-xs font-medium text-ink"
+                >
+                  <Pencil className="size-3.5" />
+                  Editar
                 </button>
                 <button
                   onClick={() => deleteItem(item.id)}
                   className="text-xs text-danger font-medium"
                 >
-                  Delete
+                  Eliminar
                 </button>
               </div>
             </div>
@@ -307,7 +365,7 @@ function MenuManager({ restaurantId }: { restaurantId: string }) {
         ))}
         {items.length === 0 && !showForm && (
           <p className="text-center text-muted py-12 text-sm">
-            No menu items yet. Add your first dish!
+            Aún no hay platillos. ¡Agrega el primero!
           </p>
         )}
       </div>

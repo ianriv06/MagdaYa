@@ -7,7 +7,7 @@ const MapInner = dynamic(() => import("./map-inner"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-canvas animate-pulse flex items-center justify-center text-muted text-sm">
-      Loading map…
+      Cargando mapa…
     </div>
   ),
 });

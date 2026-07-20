@@ -9,12 +9,12 @@ import { QrCode, ClipboardList } from "lucide-react";
 const nav = [
   {
     href: "/admin",
-    label: "Orders",
+    label: "Pedidos",
     icon: <ClipboardList className="size-5" />,
   },
   {
     href: "/admin/payment",
-    label: "Payment QR",
+    label: "QR de pago",
     icon: <QrCode className="size-5" />,
   },
 ];
@@ -39,7 +39,7 @@ export function AdminLayout({
   if (loading || !profile || profile.role !== "admin") {
     return (
       <div className="min-h-dvh flex items-center justify-center text-muted">
-        Loading…
+        Cargando…
       </div>
     );
   }

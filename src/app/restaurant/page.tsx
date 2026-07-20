@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export default function RestaurantOverviewPage() {
   return (
-    <RestaurantLayout title="Overview">
+    <RestaurantLayout title="Resumen">
       {(restaurant) => <Overview restaurantId={restaurant.id} />}
     </RestaurantLayout>
   );
@@ -71,9 +71,9 @@ function Overview({ restaurantId }: { restaurantId: string }) {
     <div className="space-y-6 animate-slide-up">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {[
-          { label: "Active orders", value: active },
-          { label: "Menu items", value: menuCount },
-          { label: "Recent revenue", value: formatCurrency(revenue) },
+          { label: "Pedidos activos", value: active },
+          { label: "Platillos", value: menuCount },
+          { label: "Ingresos recientes", value: formatCurrency(revenue) },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -87,17 +87,17 @@ function Overview({ restaurantId }: { restaurantId: string }) {
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">Recent orders</h2>
+          <h2 className="font-semibold">Pedidos recientes</h2>
           <Link
             href="/restaurant/orders"
             className="text-sm text-brand font-medium"
           >
-            View all
+            Ver todos
           </Link>
         </div>
         {orders.length === 0 ? (
           <p className="text-muted text-sm py-8 text-center">
-            No orders yet. Share your restaurant and start selling!
+            Aún no hay pedidos. ¡Comparte tu restaurante y empieza a vender!
           </p>
         ) : (
           <div className="space-y-2">
@@ -112,7 +112,7 @@ function Overview({ restaurantId }: { restaurantId: string }) {
                   </p>
                   <p className="text-xs text-muted">
                     {formatCurrency(o.total)} ·{" "}
-                    {o.order_type === "delivery" ? "Delivery" : "Pickup"}
+                    {o.order_type === "delivery" ? "Domicilio" : "Para recoger"}
                   </p>
                 </div>
                 <StatusBadge status={o.status} />

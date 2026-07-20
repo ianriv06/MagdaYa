@@ -15,9 +15,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "MagdaYa — Food Delivery & Pickup",
+  title: "MagdaYa — Comida a domicilio y para recoger",
   description:
-    "Order food for delivery or pickup. Fast, simple, QR payment. Track your order in real time.",
+    "Pide comida a domicilio o para recoger. Rápido, simple, pago con QR. Sigue tu pedido en tiempo real.",
   icons: { icon: "/favicon.svg" },
 };
 
@@ -34,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body
         className={`${geistSans.variable} ${outfit.variable} antialiased min-h-dvh`}
       >

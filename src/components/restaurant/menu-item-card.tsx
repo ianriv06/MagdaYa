@@ -3,9 +3,8 @@
 import Image from "next/image";
 import { Plus, Minus } from "lucide-react";
 import type { MenuItem } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { useCart } from "@/store/cart";
-import { cn } from "@/lib/utils";
 
 export function MenuItemCard({
   item,
@@ -22,41 +21,28 @@ export function MenuItemCard({
   return (
     <div
       className={cn(
-        "flex gap-3 p-3 rounded-2xl bg-surface border border-border",
-        !item.is_available && "opacity-50"
+        "flex gap-3 py-4 border-b border-border last:border-0",
+        !item.is_available && "opacity-45"
       )}
     >
-      <div className="relative size-24 shrink-0 rounded-xl overflow-hidden bg-canvas">
-        {item.image_url ? (
-          <Image
-            src={item.image_url}
-            alt={item.name}
-            fill
-            className="object-cover"
-            sizes="96px"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-brand/10 to-transparent" />
-        )}
-      </div>
-      <div className="flex-1 min-w-0 flex flex-col">
-        <h4 className="font-semibold leading-tight">{item.name}</h4>
+      <div className="flex-1 min-w-0 flex flex-col pr-1">
+        <h4 className="font-bold text-[15px] leading-snug">{item.name}</h4>
         {item.description && (
-          <p className="text-xs text-muted mt-0.5 line-clamp-2">
+          <p className="text-[13px] text-muted mt-1 line-clamp-2 leading-snug">
             {item.description}
           </p>
         )}
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <span className="font-bold text-brand">
+        <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+          <span className="font-bold text-[15px]">
             {formatCurrency(item.price)}
           </span>
           {!item.is_available ? (
-            <span className="text-xs text-muted font-medium">Unavailable</span>
+            <span className="text-xs text-muted font-medium">No disponible</span>
           ) : inCart ? (
             <div className="flex items-center gap-2">
               <button
                 onClick={() => updateQuantity(item.id, inCart.quantity - 1)}
-                className="size-8 rounded-full bg-canvas border border-border flex items-center justify-center active:scale-95"
+                className="size-8 rounded-full bg-subtle flex items-center justify-center active:scale-95"
               >
                 <Minus className="size-3.5" />
               </button>
@@ -65,7 +51,7 @@ export function MenuItemCard({
               </span>
               <button
                 onClick={() => updateQuantity(item.id, inCart.quantity + 1)}
-                className="size-8 rounded-full bg-brand text-white flex items-center justify-center active:scale-95"
+                className="size-8 rounded-full bg-ink text-white flex items-center justify-center active:scale-95"
               >
                 <Plus className="size-3.5" />
               </button>
@@ -73,12 +59,23 @@ export function MenuItemCard({
           ) : (
             <button
               onClick={() => addItem(item, restaurantId, restaurantName)}
-              className="size-9 rounded-full bg-brand text-white flex items-center justify-center active:scale-95 shadow-sm shadow-brand/30"
+              className="size-8 rounded-full bg-white border border-border shadow-sm flex items-center justify-center active:scale-95"
             >
-              <Plus className="size-5" />
+              <Plus className="size-4" strokeWidth={2.5} />
             </button>
           )}
         </div>
+      </div>
+      <div className="relative size-[96px] shrink-0 rounded-lg overflow-hidden bg-subtle">
+        {item.image_url ? (
+          <Image
+            src={item.image_url}
+            alt={item.name}
+            fill
+            className="object-cover"
+            sizes="96px"
+          />
+        ) : null}
       </div>
     </div>
   );

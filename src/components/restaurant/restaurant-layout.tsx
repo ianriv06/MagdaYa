@@ -11,27 +11,28 @@ import {
   ClipboardList,
   Settings,
 } from "lucide-react";
+import { DEFAULT_DELIVERY_ETA } from "@/lib/utils";
 import type { Restaurant } from "@/lib/types";
 
 const nav = [
   {
     href: "/restaurant",
-    label: "Overview",
+    label: "Resumen",
     icon: <LayoutDashboard className="size-5" />,
   },
   {
     href: "/restaurant/menu",
-    label: "Menu",
+    label: "Menú",
     icon: <UtensilsCrossed className="size-5" />,
   },
   {
     href: "/restaurant/orders",
-    label: "Orders",
+    label: "Pedidos",
     icon: <ClipboardList className="size-5" />,
   },
   {
     href: "/restaurant/settings",
-    label: "Settings",
+    label: "Configuración",
     icon: <Settings className="size-5" />,
   },
 ];
@@ -72,14 +73,14 @@ export function RestaurantLayout({
   if (loading || !ready) {
     return (
       <div className="min-h-dvh flex items-center justify-center text-muted">
-        Loading…
+        Cargando…
       </div>
     );
   }
 
   if (!restaurant) {
     return (
-      <DashboardShell title="Set up restaurant" nav={nav} roleLabel="Restaurant">
+      <DashboardShell title="Configura tu restaurante" nav={nav} roleLabel="Restaurante">
         <SetupRestaurant
           onCreated={(r) => {
             setRestaurant(r);
@@ -90,7 +91,7 @@ export function RestaurantLayout({
   }
 
   return (
-    <DashboardShell title={title} nav={nav} roleLabel="Restaurant">
+    <DashboardShell title={title} nav={nav} roleLabel="Restaurante">
       {children(restaurant)}
     </DashboardShell>
   );
@@ -124,6 +125,7 @@ function SetupRestaurant({
         address,
         cuisine,
         description,
+        delivery_eta_range: DEFAULT_DELIVERY_ETA,
         lat: 40.7128 + Math.random() * 0.05,
         lng: -74.006 + Math.random() * 0.05,
         image_url: `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80`,
@@ -143,14 +145,14 @@ function SetupRestaurant({
   return (
     <div className="max-w-md animate-slide-up">
       <h2 className="font-display text-xl font-bold mb-2">
-        Set up your restaurant
+        Configura tu restaurante
       </h2>
       <p className="text-muted text-sm mb-6">
-        Tell us about your place to start receiving orders.
+        Cuéntanos sobre tu local para empezar a recibir pedidos.
       </p>
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Restaurant name</label>
+          <label className="text-sm font-medium">Nombre del restaurante</label>
           <input
             className="w-full h-12 px-4 rounded-2xl border-2 border-border bg-surface focus:outline-none focus:border-brand"
             value={name}
@@ -159,16 +161,16 @@ function SetupRestaurant({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Cuisine</label>
+          <label className="text-sm font-medium">Tipo de comida</label>
           <input
             className="w-full h-12 px-4 rounded-2xl border-2 border-border bg-surface focus:outline-none focus:border-brand"
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
-            placeholder="Italian, Thai, Burgers…"
+            placeholder="Italiana, mexicana, hamburguesas…"
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Address</label>
+          <label className="text-sm font-medium">Dirección</label>
           <input
             className="w-full h-12 px-4 rounded-2xl border-2 border-border bg-surface focus:outline-none focus:border-brand"
             value={address}
@@ -177,7 +179,7 @@ function SetupRestaurant({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Description</label>
+          <label className="text-sm font-medium">Descripción</label>
           <textarea
             className="w-full min-h-24 px-4 py-3 rounded-2xl border-2 border-border bg-surface focus:outline-none focus:border-brand resize-none"
             value={description}
@@ -192,7 +194,7 @@ function SetupRestaurant({
           disabled={loading}
           className="w-full h-12 rounded-2xl bg-brand text-white font-semibold disabled:opacity-50"
         >
-          {loading ? "Creating…" : "Create restaurant"}
+          {loading ? "Creando…" : "Crear restaurante"}
         </button>
       </form>
     </div>

@@ -39,8 +39,10 @@ CREATE TABLE restaurants (
   lat DOUBLE PRECISION NOT NULL DEFAULT 40.7128,
   lng DOUBLE PRECISION NOT NULL DEFAULT -74.0060,
   rating NUMERIC(2,1) DEFAULT 4.5,
-  delivery_fee NUMERIC(10,2) DEFAULT 2.99,
-  eta_minutes INTEGER DEFAULT 30,
+  delivery_fee NUMERIC(10,2) DEFAULT 20,
+  eta_minutes INTEGER DEFAULT 20,
+  delivery_eta_range TEXT NOT NULL DEFAULT '15-30'
+    CHECK (delivery_eta_range IN ('15-30', '30-60', '60+')),
   is_open BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -104,6 +106,8 @@ CREATE TABLE orders (
   delivery_lat DOUBLE PRECISION,
   delivery_lng DOUBLE PRECISION,
   customer_notes TEXT,
+  whatsapp TEXT,
+  payment_receipt_url TEXT,
   status_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -140,28 +144,39 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_drivers_user ON drivers(user_id);
 
 -- Auto-create profile on signup
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, full_name, phone, role)
   VALUES (
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
-    NEW.raw_user_meta_data->>'phone',
-    COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'customer')
+    NULLIF(NEW.raw_user_meta_data->>'phone', ''),
+    COALESCE(
+      NULLIF(NEW.raw_user_meta_data->>'role', '')::public.user_role,
+      'customer'::public.user_role
+    )
   );
-  -- Auto-create driver record
+
   IF COALESCE(NEW.raw_user_meta_data->>'role', 'customer') = 'driver' THEN
-    INSERT INTO public.drivers (user_id) VALUES (NEW.id);
+    INSERT INTO public.drivers (user_id) VALUES (NEW.id)
+    ON CONFLICT (user_id) DO NOTHING;
   END IF;
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
 
 -- Status history helper
 CREATE OR REPLACE FUNCTION log_order_status_change()

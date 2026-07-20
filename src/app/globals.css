@@ -3,13 +3,14 @@
 :root {
   --brand: #06c167;
   --brand-dark: #048a4a;
-  --brand-light: #e6f9ef;
-  --ink: #1a1a1a;
-  --muted: #6b7280;
+  --brand-light: #e8f8ef;
+  --ink: #000000;
+  --muted: #6b6b6b;
   --surface: #ffffff;
-  --canvas: #f7f7f7;
-  --border: #e5e7eb;
-  --danger: #ef4444;
+  --canvas: #ffffff;
+  --subtle: #f3f3f3;
+  --border: #e2e2e2;
+  --danger: #de1135;
   --warning: #f59e0b;
   --info: #3b82f6;
 }
@@ -22,6 +23,7 @@
   --color-muted: var(--muted);
   --color-surface: var(--surface);
   --color-canvas: var(--canvas);
+  --color-subtle: var(--subtle);
   --color-border: var(--border);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
@@ -32,16 +34,19 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  overscroll-behavior-y: none;
 }
 
 .font-display {
@@ -59,7 +64,7 @@ body {
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -87,11 +92,11 @@ body {
 }
 
 .animate-slide-up {
-  animation: slide-up 0.35s ease-out both;
+  animation: slide-up 0.3s ease-out both;
 }
 
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out both;
+  animation: fade-in 0.25s ease-out both;
 }
 
 .animate-pulse-soft {
@@ -100,4 +105,17 @@ body {
 
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Hide scrollbars on horizontal category strips */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

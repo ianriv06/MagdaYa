@@ -5,12 +5,15 @@ import { createClient } from "@/lib/supabase/client";
 import type { Restaurant } from "@/lib/types";
 import { RestaurantCard } from "@/components/restaurant/restaurant-card";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
-import { Search } from "lucide-react";
+import { useCart } from "@/store/cart";
+import { cn } from "@/lib/utils";
+import { ChevronDown, MapPin, Search, SlidersHorizontal } from "lucide-react";
 
 export default function HomePage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const { orderType, setOrderType, deliveryAddress } = useCart();
   const supabase = createClient();
 
   useEffect(() => {
@@ -33,68 +36,142 @@ export default function HomePage() {
       (r.cuisine || "").toLowerCase().includes(query.toLowerCase())
   );
 
+  const locationLabel =
+    deliveryAddress?.trim() ||
+    (orderType === "pickup" ? "Recoger cerca" : "Tu ubicación");
+
   return (
-    <div className="min-h-dvh pb-20 md:pb-0">
+    <div className="min-h-dvh bg-white pb-[72px] md:pb-0">
       <DesktopHeader />
 
-      <section className="relative overflow-hidden bg-ink text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--brand)_0%,_transparent_55%)] opacity-40" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAgNHYyaDJ2LTJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50" />
-        <div className="relative max-w-6xl mx-auto px-4 py-10 md:py-16">
-          <h1 className="font-display text-3xl md:text-5xl font-bold tracking-tight max-w-lg animate-slide-up">
-            Magda<span className="text-brand">Ya</span>
-          </h1>
-          <p className="mt-2 text-white/70 text-base md:text-lg max-w-md animate-slide-up [animation-delay:80ms]">
-            Your favorites, delivered or ready for pickup.
-          </p>
-          <div className="mt-6 relative max-w-md animate-slide-up [animation-delay:120ms]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted" />
+      {/* Mobile sticky header — Uber Eats style */}
+      <header className="sticky top-0 z-40 bg-white safe-top md:hidden border-b border-transparent">
+        <div className="px-4 pt-3 pb-3 space-y-3">
+          {/* Delivery / Pickup segmented control */}
+          <div className="flex justify-center">
+            <div className="inline-flex p-1 rounded-full bg-subtle">
+              {(
+                [
+                  { id: "delivery", label: "Domicilio" },
+                  { id: "pickup", label: "Para recoger" },
+                ] as const
+              ).map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setOrderType(id)}
+                  className={cn(
+                    "h-8 px-4 rounded-full text-[13px] font-bold transition-colors",
+                    orderType === id
+                      ? "bg-ink text-white"
+                      : "text-ink/70"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Location */}
+          <button
+            type="button"
+            className="flex items-center justify-center gap-1 w-full text-[14px] font-semibold active:opacity-70"
+          >
+            <MapPin className="size-3.5 shrink-0" strokeWidth={2.5} />
+            <span className="truncate max-w-[70%]">
+              Ahora · {locationLabel}
+            </span>
+            <ChevronDown className="size-3.5 shrink-0 text-muted" />
+          </button>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-[18px] text-ink" />
             <input
               type="search"
-              placeholder="Search restaurants or cuisines"
+              placeholder="Comida, restaurantes…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand"
+              className="w-full h-11 pl-11 pr-11 rounded-full bg-subtle text-[15px] placeholder:text-muted focus:outline-none"
             />
+            <button
+              type="button"
+              aria-label="Filtros"
+              className="absolute right-2 top-1/2 -translate-y-1/2 size-8 rounded-full flex items-center justify-center text-ink"
+            >
+              <SlidersHorizontal className="size-4" />
+            </button>
           </div>
         </div>
-      </section>
+      </header>
 
-      <section className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="font-display text-xl font-bold mb-4">
-          {query ? "Results" : "Nearby restaurants"}
+      {/* Desktop search (supplement) */}
+      <div className="hidden md:block max-w-6xl mx-auto px-4 pt-6">
+        <div className="flex gap-2 mb-4">
+          {(
+            [
+              { id: "delivery", label: "Domicilio" },
+              { id: "pickup", label: "Para recoger" },
+            ] as const
+          ).map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setOrderType(id)}
+              className={cn(
+                "h-9 px-4 rounded-full text-sm font-bold transition-colors",
+                orderType === id ? "bg-ink text-white" : "bg-subtle text-ink"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="relative max-w-md mb-2">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted" />
+          <input
+            type="search"
+            placeholder="Comida, restaurantes…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full h-12 pl-12 pr-4 rounded-full bg-subtle text-ink placeholder:text-muted focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <main className="max-w-6xl mx-auto px-4 pt-4 md:pt-6 pb-4">
+        <h2 className="text-[18px] font-bold tracking-tight mb-3">
+          {query ? "Resultados" : "Restaurantes cerca"}
         </h2>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="rounded-3xl bg-surface border border-border overflow-hidden animate-pulse"
-              >
-                <div className="aspect-[16/10] bg-canvas" />
-                <div className="p-4 space-y-2">
-                  <div className="h-5 bg-canvas rounded w-2/3" />
-                  <div className="h-3 bg-canvas rounded w-1/3" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[16/9] rounded-xl bg-subtle" />
+                <div className="pt-2.5 space-y-2">
+                  <div className="h-4 bg-subtle rounded w-2/3" />
+                  <div className="h-3 bg-subtle rounded w-1/3" />
                 </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted">
-            <p className="font-medium">No restaurants found</p>
+          <div className="text-center py-20 text-muted">
+            <p className="font-semibold text-ink">No se encontraron restaurantes</p>
             <p className="text-sm mt-1">
               {restaurants.length === 0
-                ? "Restaurants will appear once they join MagdaYa."
-                : "Try a different search."}
+                ? "Los restaurantes aparecerán cuando se unan a MagdaYa."
+                : "Intenta con otra búsqueda."}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((r, i) => (
               <div
                 key={r.id}
-                style={{ animationDelay: `${i * 40}ms` }}
+                style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
                 className="animate-slide-up"
               >
                 <RestaurantCard restaurant={r} />
@@ -102,7 +179,7 @@ export default function HomePage() {
             ))}
           </div>
         )}
-      </section>
+      </main>
 
       <CustomerNav />
     </div>

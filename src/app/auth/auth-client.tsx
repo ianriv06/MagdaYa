@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getDashboardPath, cn } from "@/lib/utils";
+import { getDashboardPath, cn, ROLE_LABELS } from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
 import { Bike, ChefHat, ShoppingBag, Shield, ArrowLeft } from "lucide-react";
 
@@ -18,26 +18,26 @@ const ROLES: {
 }[] = [
   {
     id: "customer",
-    label: "Customer",
-    description: "Order food for delivery or pickup",
+    label: "Cliente",
+    description: "Pide comida a domicilio o para recoger",
     icon: ShoppingBag,
   },
   {
     id: "restaurant",
-    label: "Restaurant",
-    description: "Manage your menu and orders",
+    label: "Restaurante",
+    description: "Administra tu menú y pedidos",
     icon: ChefHat,
   },
   {
     id: "driver",
-    label: "Driver",
-    description: "Deliver orders and earn",
+    label: "Repartidor",
+    description: "Entrega pedidos y gana dinero",
     icon: Bike,
   },
   {
     id: "admin",
     label: "Super Admin",
-    description: "Oversee the entire platform",
+    description: "Controla toda la plataforma",
     icon: Shield,
   },
 ];
@@ -62,6 +62,35 @@ export default function AuthPage() {
     setError("");
   };
 
+  const formatError = (err: unknown) => {
+    if (!err) return "Error desconocido";
+    if (typeof err === "string" && err.trim()) return err;
+    if (err instanceof Error) {
+      const e = err as Error & {
+        code?: string;
+        status?: number;
+        error_description?: string;
+      };
+      const parts = [e.message, e.error_description, e.code]
+        .filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+      if (parts.length) return parts.join(" — ");
+    }
+    if (typeof err === "object" && err !== null) {
+      const o = err as Record<string, unknown>;
+      for (const key of ["message", "msg", "error_description", "error"]) {
+        const v = o[key];
+        if (typeof v === "string" && v.trim() && v !== "{}") return v;
+      }
+      try {
+        const raw = JSON.stringify(err);
+        if (raw && raw !== "{}") return raw;
+      } catch {
+        /* ignore */
+      }
+    }
+    return "No se pudo crear la cuenta. Si el error persiste, ejecuta supabase/fix-signup-trigger.sql en el SQL Editor.";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -70,19 +99,32 @@ export default function AuthPage() {
     try {
       if (mode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
-            data: { full_name: fullName, phone, role },
+            data: {
+              full_name: fullName.trim(),
+              phone: phone.trim() || null,
+              role,
+            },
           },
         });
         if (signUpError) throw signUpError;
-        if (!data.user) throw new Error("Signup failed");
+        if (!data.user) {
+          throw new Error(
+            "La cuenta no se creó (respuesta vacía). Revisa Authentication → Users en Supabase."
+          );
+        }
+        // Wait briefly for profile trigger
+        await new Promise((r) => setTimeout(r, 400));
         router.push(next || getDashboardPath(role));
         router.refresh();
       } else {
         const { data, error: signInError } =
-          await supabase.auth.signInWithPassword({ email, password });
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
         if (signInError) throw signInError;
 
         const { data: profile } = await supabase
@@ -93,8 +135,10 @@ export default function AuthPage() {
 
         if (profile && profile.role !== role) {
           await supabase.auth.signOut();
+          const roleLabel =
+            ROLE_LABELS[profile.role as UserRole] || profile.role;
           throw new Error(
-            `This account is registered as ${profile.role}. Please use the ${profile.role} sign-in.`
+            `Esta cuenta es de ${roleLabel}. Usa el acceso de ${roleLabel}.`
           );
         }
 
@@ -102,7 +146,8 @@ export default function AuthPage() {
         router.refresh();
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      console.error("Auth error:", err);
+      setError(formatError(err));
     } finally {
       setLoading(false);
     }
@@ -110,13 +155,15 @@ export default function AuthPage() {
 
   if (mode === "select") {
     return (
-      <div className="min-h-dvh bg-gradient-to-b from-brand-light via-canvas to-canvas">
-        <div className="max-w-md mx-auto px-4 py-12">
-          <div className="text-center mb-10 animate-fade-in">
-            <h1 className="font-display text-4xl font-bold tracking-tight">
+      <div className="min-h-dvh bg-white">
+        <div className="max-w-md mx-auto px-4 py-10">
+          <div className="text-center mb-8 animate-fade-in">
+            <h1 className="font-display text-[32px] font-bold tracking-tight">
               Magda<span className="text-brand">Ya</span>
             </h1>
-            <p className="text-muted mt-2">Food delivery & pickup, simplified.</p>
+            <p className="text-muted mt-1.5 text-[15px]">
+              Comida a domicilio y para recoger
+            </p>
           </div>
 
           <div className="space-y-3 animate-slide-up">
@@ -125,15 +172,17 @@ export default function AuthPage() {
               return (
                 <div
                   key={r.id}
-                  className="bg-surface rounded-3xl border border-border p-4 shadow-sm"
+                  className="bg-white rounded-xl border border-border p-4"
                 >
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="size-11 rounded-2xl bg-brand-light text-brand flex items-center justify-center shrink-0">
+                    <div className="size-10 rounded-lg bg-subtle text-ink flex items-center justify-center shrink-0">
                       <Icon className="size-5" />
                     </div>
                     <div>
-                      <h2 className="font-semibold">{r.label}</h2>
-                      <p className="text-sm text-muted">{r.description}</p>
+                      <h2 className="font-bold text-[15px]">{r.label}</h2>
+                      <p className="text-[13px] text-muted leading-snug">
+                        {r.description}
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -143,14 +192,14 @@ export default function AuthPage() {
                       className="flex-1"
                       onClick={() => selectRole(r.id, "login")}
                     >
-                      Log in
+                      Entrar
                     </Button>
                     <Button
                       size="sm"
                       className="flex-1"
                       onClick={() => selectRole(r.id, "signup")}
                     >
-                      Sign up
+                      Registrarse
                     </Button>
                   </div>
                 </div>
@@ -161,9 +210,9 @@ export default function AuthPage() {
           <p className="text-center text-sm text-muted mt-8">
             <Link
               href="/"
-              className="hover:text-ink underline-offset-2 hover:underline"
+              className="hover:text-ink font-semibold underline-offset-2 hover:underline"
             >
-              Continue browsing
+              Seguir explorando
             </Link>
           </p>
         </div>
@@ -181,7 +230,7 @@ export default function AuthPage() {
           onClick={() => setMode("select")}
           className="flex items-center gap-1.5 text-sm text-muted hover:text-ink mb-6"
         >
-          <ArrowLeft className="size-4" /> Back
+          <ArrowLeft className="size-4" /> Atrás
         </button>
 
         <div className="animate-slide-up">
@@ -191,7 +240,7 @@ export default function AuthPage() {
             </div>
             <div>
               <h1 className="font-display text-2xl font-bold">
-                {mode === "login" ? "Welcome back" : "Create account"}
+                {mode === "login" ? "Bienvenido de nuevo" : "Crear cuenta"}
               </h1>
               <p className="text-sm text-muted">{roleMeta.label}</p>
             </div>
@@ -202,7 +251,7 @@ export default function AuthPage() {
               <>
                 <Input
                   id="fullName"
-                  label="Full name"
+                  label="Nombre completo"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
@@ -210,7 +259,7 @@ export default function AuthPage() {
                 />
                 <Input
                   id="phone"
-                  label="Phone"
+                  label="Teléfono"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -220,7 +269,7 @@ export default function AuthPage() {
             )}
             <Input
               id="email"
-              label="Email"
+              label="Correo"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -229,7 +278,7 @@ export default function AuthPage() {
             />
             <Input
               id="password"
-              label="Password"
+              label="Contraseña"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -247,29 +296,29 @@ export default function AuthPage() {
             )}
 
             <Button type="submit" className="w-full" size="lg" loading={loading}>
-              {mode === "login" ? "Log in" : "Create account"}
+              {mode === "login" ? "Entrar" : "Crear cuenta"}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted mt-6">
             {mode === "login" ? (
               <>
-                No account?{" "}
+                ¿No tienes cuenta?{" "}
                 <button
                   className={cn("text-brand font-semibold")}
                   onClick={() => setMode("signup")}
                 >
-                  Sign up
+                  Regístrate
                 </button>
               </>
             ) : (
               <>
-                Already have an account?{" "}
+                ¿Ya tienes cuenta?{" "}
                 <button
                   className="text-brand font-semibold"
                   onClick={() => setMode("login")}
                 >
-                  Log in
+                  Entrar
                 </button>
               </>
             )}

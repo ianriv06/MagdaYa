@@ -58,7 +58,7 @@ export default function OrdersPage() {
     <div className="min-h-dvh pb-20">
       <DesktopHeader />
       <div className="max-w-lg mx-auto px-4 py-6">
-        <h1 className="font-display text-2xl font-bold mb-6">Your orders</h1>
+        <h1 className="font-display text-2xl font-bold mb-6">Tus pedidos</h1>
 
         {loading || authLoading ? (
           <div className="space-y-3">
@@ -71,19 +71,19 @@ export default function OrdersPage() {
           </div>
         ) : !user ? (
           <div className="text-center py-16">
-            <p className="text-muted mb-4">Sign in to see your orders</p>
+            <p className="text-muted mb-4">Inicia sesión para ver tus pedidos</p>
             <Link
               href="/auth?next=/orders"
               className="text-brand font-semibold"
             >
-              Sign in
+              Iniciar sesión
             </Link>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-16 text-muted">
-            <p className="font-medium">No orders yet</p>
+            <p className="font-medium">Aún no tienes pedidos</p>
             <Link href="/" className="text-brand text-sm font-semibold mt-2 inline-block">
-              Start ordering
+              Empezar a pedir
             </Link>
           </div>
         ) : (
@@ -97,14 +97,14 @@ export default function OrdersPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold truncate">
-                      {order.restaurants?.name || "Restaurant"}
+                      {order.restaurants?.name || "Restaurante"}
                     </h3>
                     <StatusBadge status={order.status} />
                   </div>
                   <p className="text-sm text-muted">
                     {formatCurrency(order.total)} ·{" "}
-                    {order.order_type === "delivery" ? "Delivery" : "Pickup"} ·{" "}
-                    {new Date(order.created_at).toLocaleDateString()}
+                    {order.order_type === "delivery" ? "Domicilio" : "Para recoger"} ·{" "}
+                    {new Date(order.created_at).toLocaleDateString("es-MX")}
                   </p>
                 </div>
                 <ChevronRight className="size-5 text-muted shrink-0" />

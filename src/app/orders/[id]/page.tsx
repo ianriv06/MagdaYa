@@ -63,7 +63,7 @@ export default function OrderTrackingPage() {
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center text-muted">
-        Loading order…
+        Cargando pedido…
       </div>
     );
   }
@@ -71,9 +71,9 @@ export default function OrderTrackingPage() {
   if (!order) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center gap-4">
-        <p className="text-muted">Order not found</p>
+        <p className="text-muted">Pedido no encontrado</p>
         <Button variant="outline" onClick={() => router.push("/orders")}>
-          Back to orders
+          Volver a pedidos
         </Button>
       </div>
     );
@@ -94,7 +94,7 @@ export default function OrderTrackingPage() {
       id: "customer",
       lat: order.delivery_lat,
       lng: order.delivery_lng,
-      label: "Delivery location",
+      label: "Lugar de entrega",
       type: "customer",
     });
   }
@@ -107,7 +107,7 @@ export default function OrderTrackingPage() {
       id: "driver",
       lat: order.drivers.current_lat,
       lng: order.drivers.current_lng,
-      label: "Your driver",
+      label: "Tu repartidor",
       type: "driver",
     });
   }
@@ -141,34 +141,40 @@ export default function OrderTrackingPage() {
           ) : (
             <Store className="size-4" />
           )}
-          {order.order_type === "delivery" ? "Delivery" : "Pickup"}
+          {order.order_type === "delivery" ? "Domicilio" : "Para recoger"}
           {order.delivery_address && (
             <span className="truncate">· {order.delivery_address}</span>
           )}
         </div>
 
+        {order.whatsapp && (
+          <p className="text-sm text-muted">
+            WhatsApp: <span className="font-semibold text-ink">{order.whatsapp}</span>
+          </p>
+        )}
+
         <section className="rounded-3xl bg-surface border border-border p-5">
-          <h2 className="font-semibold mb-4">Order progress</h2>
+          <h2 className="font-semibold mb-4">Avance del pedido</h2>
           <OrderTimeline status={order.status} />
         </section>
 
         {order.status === "placed" && (
           <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
-            We&apos;ve received your order. Waiting for payment confirmation
-            from MagdaYa.
+            Recibimos tu pedido. Esperando confirmación de pago de
+            MagdaYa.
           </div>
         )}
 
         {order.drivers?.profiles && order.status === "on_the_way" && (
           <div className="rounded-2xl bg-brand-light p-4 text-sm">
             <p className="font-semibold text-brand-dark">
-              {order.drivers.profiles.full_name} is on the way
+              {order.drivers.profiles.full_name} va en camino
             </p>
           </div>
         )}
 
         <section className="rounded-3xl bg-surface border border-border p-5">
-          <h2 className="font-semibold mb-3">Items</h2>
+          <h2 className="font-semibold mb-3">Productos</h2>
           <div className="space-y-2">
             {order.order_items?.map((item) => (
               <div
@@ -195,7 +201,7 @@ export default function OrderTrackingPage() {
 
         {user && (
           <p className="text-center text-xs text-muted">
-            Order #{order.id.slice(0, 8).toUpperCase()}
+            Pedido #{order.id.slice(0, 8).toUpperCase()}
           </p>
         )}
       </div>

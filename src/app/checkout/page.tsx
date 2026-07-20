@@ -9,8 +9,8 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { formatCurrency } from "@/lib/utils";
-import { QrCode, MapPin, CheckCircle2 } from "lucide-react";
+import { formatCurrency, DELIVERY_FEE } from "@/lib/utils";
+import { QrCode, MapPin, CheckCircle2, MessageCircle, Upload } from "lucide-react";
 import type { PaymentSettings, Restaurant } from "@/lib/types";
 
 export default function CheckoutPage() {
@@ -21,24 +21,27 @@ export default function CheckoutPage() {
     setDeliveryAddress,
     notes,
     setNotes,
+    whatsapp,
+    setWhatsapp,
     subtotal,
     clearCart,
     itemCount,
     deliveryLat,
     deliveryLng,
   } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
   const [qr, setQr] = useState<PaymentSettings | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [paid, setPaid] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [locating, setLocating] = useState(false);
 
-  const deliveryFee = orderType === "delivery" ? 2.99 : 0;
+  const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
   const total = subtotal() + deliveryFee;
 
   useEffect(() => {
@@ -63,9 +66,17 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Prefill WhatsApp from profile phone once
+  useEffect(() => {
+    if (!whatsapp.trim() && profile?.phone) {
+      setWhatsapp(profile.phone);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.phone]);
+
   const useMyLocation = () => {
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported");
+      setError("La geolocalización no está disponible");
       return;
     }
     setLocating(true);
@@ -78,7 +89,8 @@ export default function CheckoutPage() {
           );
           const data = await res.json();
           setDeliveryAddress(
-            data.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+            data.display_name ||
+              `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
             latitude,
             longitude
           );
@@ -92,7 +104,7 @@ export default function CheckoutPage() {
         setLocating(false);
       },
       () => {
-        setError("Could not get your location");
+        setError("No pudimos obtener tu ubicación");
         setLocating(false);
       },
       { enableHighAccuracy: true }
@@ -102,11 +114,16 @@ export default function CheckoutPage() {
   const placeOrder = async () => {
     if (!user || !restaurant) return;
     if (orderType === "delivery" && !deliveryAddress.trim()) {
-      setError("Please enter a delivery address");
+      setError("Ingresa una dirección de entrega");
       return;
     }
-    if (!paid) {
-      setError("Please confirm you've paid via QR before placing your order");
+    const whatsappClean = whatsapp.trim();
+    if (!whatsappClean) {
+      setError("Ingresa tu número de WhatsApp para esta orden");
+      return;
+    }
+    if (!receiptFile) {
+      setError("Sube una captura de tu comprobante de pago");
       return;
     }
 
@@ -118,10 +135,20 @@ export default function CheckoutPage() {
       let lng = deliveryLng;
 
       if (orderType === "delivery" && (lat == null || lng == null)) {
-        // Default near restaurant if no coords
         lat = restaurant.lat + 0.008;
         lng = restaurant.lng + 0.008;
       }
+
+      const ext = receiptFile.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("payment-receipts")
+        .upload(path, receiptFile);
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("payment-receipts").getPublicUrl(path);
 
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -138,6 +165,8 @@ export default function CheckoutPage() {
           delivery_lat: orderType === "delivery" ? lat : restaurant.lat,
           delivery_lng: orderType === "delivery" ? lng : restaurant.lng,
           customer_notes: notes || null,
+          whatsapp: whatsappClean,
+          payment_receipt_url: publicUrl,
         })
         .select()
         .single();
@@ -162,32 +191,34 @@ export default function CheckoutPage() {
         order_id: order.id,
         status: "placed",
         changed_by: user.id,
-        note: "Order placed, awaiting payment confirmation",
+        note: "Pedido realizado, esperando confirmación de pago",
       });
 
       clearCart();
       router.push(`/orders/${order.id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to place order");
+      setError(
+        err instanceof Error ? err.message : "No se pudo hacer el pedido"
+      );
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-dvh bg-canvas">
-      <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center">
-        <h1 className="font-display text-lg font-bold">Checkout</h1>
+    <div className="min-h-dvh bg-white">
+      <header className="sticky top-0 z-30 bg-white border-b border-border px-4 h-14 flex items-center">
+        <h1 className="text-lg font-bold">Pagar</h1>
       </header>
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-slide-up">
         {orderType === "delivery" && (
           <section className="space-y-3">
-            <h2 className="font-semibold flex items-center gap-2">
-              <MapPin className="size-4 text-brand" /> Delivery address
+            <h2 className="font-bold text-[15px] flex items-center gap-2">
+              <MapPin className="size-4 text-brand" /> Dirección de entrega
             </h2>
             <Input
               id="address"
-              placeholder="Enter your address"
+              placeholder="Ingresa tu dirección"
               value={deliveryAddress}
               onChange={(e) => setDeliveryAddress(e.target.value)}
             />
@@ -198,38 +229,58 @@ export default function CheckoutPage() {
               loading={locating}
               type="button"
             >
-              Use my location
+              Usar mi ubicación
             </Button>
           </section>
         )}
 
+        <section className="space-y-2">
+          <h2 className="font-bold text-[15px] flex items-center gap-2">
+            <MessageCircle className="size-4 text-brand" /> WhatsApp de contacto
+          </h2>
+          <Input
+            id="whatsapp"
+            label="Número de WhatsApp"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="Ej. 71234567"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            required
+          />
+          <p className="text-xs text-muted">
+            El restaurante o el repartidor te escribirá por este número.
+          </p>
+        </section>
+
         <section>
           <Textarea
             id="notes"
-            label="Notes (optional)"
-            placeholder="Allergies, gate code, etc."
+            label="Notas (opcional)"
+            placeholder="Alergias, código del portón, etc."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
         </section>
 
-        <section className="rounded-3xl bg-surface border border-border p-5 space-y-4">
+        <section className="rounded-xl bg-white border border-border p-5 space-y-4">
           <div className="flex items-center gap-2">
             <QrCode className="size-5 text-brand" />
-            <h2 className="font-semibold">Pay with QR</h2>
+            <h2 className="font-bold">Pagar con QR</h2>
           </div>
           <p className="text-sm text-muted">
-            Scan the code below to pay{" "}
-            <strong className="text-ink">{formatCurrency(total)}</strong>. This
-            is the only payment method.
+            Escanea el código de abajo para pagar{" "}
+            <strong className="text-ink">{formatCurrency(total)}</strong>. Es el
+            único método de pago.
           </p>
 
-          <div className="bg-canvas rounded-2xl p-6 flex items-center justify-center min-h-[220px]">
+          <div className="bg-subtle rounded-xl p-4 flex items-center justify-center min-h-[420px]">
             {qr?.qr_image_url ? (
-              <div className="relative w-48 h-48">
+              <div className="relative w-full max-w-[384px] aspect-square">
                 <Image
                   src={qr.qr_image_url}
-                  alt="Payment QR code"
+                  alt="Código QR de pago"
                   fill
                   className="object-contain"
                 />
@@ -237,38 +288,78 @@ export default function CheckoutPage() {
             ) : (
               <div className="text-center text-muted text-sm space-y-2">
                 <QrCode className="size-16 mx-auto opacity-30" />
-                <p>QR code not configured yet.</p>
+                <p>El código QR aún no está configurado.</p>
                 <p className="text-xs">
-                  Admin needs to upload the payment QR.
+                  El administrador debe subir el QR de pago.
                 </p>
               </div>
             )}
           </div>
 
-          <label className="flex items-start gap-3 p-3 rounded-2xl border-2 border-border cursor-pointer hover:border-brand transition-colors has-[:checked]:border-brand has-[:checked]:bg-brand-light">
-            <input
-              type="checkbox"
-              checked={paid}
-              onChange={(e) => setPaid(e.target.checked)}
-              className="mt-0.5 size-5 accent-[var(--brand)]"
-            />
-            <span className="text-sm">
-              <strong>I have paid</strong> via the QR code above
-            </span>
-          </label>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold leading-snug">
+              Ya pagué al código QR de arriba, aquí subiré captura de mi
+              comprobante
+            </p>
+            <label className="relative block rounded-xl border border-dashed border-border bg-subtle overflow-hidden cursor-pointer hover:border-ink transition-colors">
+              {receiptPreview ? (
+                <div className="relative w-full aspect-[4/3]">
+                  <Image
+                    src={receiptPreview}
+                    alt="Comprobante de pago"
+                    fill
+                    className="object-contain p-2"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-muted text-sm">
+                  <Upload className="size-7 opacity-50" />
+                  <span className="text-center font-medium text-ink">
+                    Toca para subir captura
+                  </span>
+                  <span className="text-xs">JPG, PNG o captura de pantalla</span>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setReceiptFile(file);
+                    setReceiptPreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
+            </label>
+            {receiptFile && (
+              <button
+                type="button"
+                className="text-xs text-muted font-medium underline"
+                onClick={() => {
+                  setReceiptFile(null);
+                  setReceiptPreview("");
+                }}
+              >
+                Quitar imagen
+              </button>
+            )}
+          </div>
         </section>
 
-        <div className="rounded-2xl bg-surface border border-border p-4 space-y-2">
+        <div className="rounded-xl bg-white border border-border p-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted">
-              {items.reduce((s, i) => s + i.quantity, 0)} items ·{" "}
-              {orderType === "delivery" ? "Delivery" : "Pickup"}
+              {items.reduce((s, i) => s + i.quantity, 0)} productos ·{" "}
+              {orderType === "delivery" ? "Domicilio" : "Para recoger"}
             </span>
             <span>{formatCurrency(subtotal())}</span>
           </div>
           {orderType === "delivery" && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted">Delivery fee</span>
+              <span className="text-muted">Costo de envío</span>
               <span>{formatCurrency(deliveryFee)}</span>
             </div>
           )}
@@ -279,7 +370,7 @@ export default function CheckoutPage() {
         </div>
 
         {error && (
-          <div className="rounded-2xl bg-red-50 text-danger text-sm p-3">
+          <div className="rounded-xl bg-red-50 text-danger text-sm p-3">
             {error}
           </div>
         )}
@@ -289,10 +380,10 @@ export default function CheckoutPage() {
           size="lg"
           onClick={placeOrder}
           loading={loading}
-          disabled={!paid}
+          disabled={!receiptFile}
         >
           <CheckCircle2 className="size-5" />
-          Place order
+          Hacer pedido
         </Button>
       </div>
     </div>

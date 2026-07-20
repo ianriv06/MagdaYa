@@ -10,7 +10,7 @@ import { OrderTimeline } from "@/components/ui/order-timeline";
 
 export default function RestaurantOrdersPage() {
   return (
-    <RestaurantLayout title="Orders">
+    <RestaurantLayout title="Pedidos">
       {(restaurant) => <OrdersList restaurantId={restaurant.id} />}
     </RestaurantLayout>
   );
@@ -56,7 +56,7 @@ function OrdersList({ restaurantId }: { restaurantId: string }) {
   return (
     <div className="space-y-3 animate-slide-up">
       {orders.length === 0 ? (
-        <p className="text-center text-muted py-12 text-sm">No orders yet</p>
+        <p className="text-center text-muted py-12 text-sm">Aún no hay pedidos</p>
       ) : (
         orders.map((o) => (
           <button
@@ -71,11 +71,11 @@ function OrdersList({ restaurantId }: { restaurantId: string }) {
                 </p>
                 <p className="text-xs text-muted mt-0.5">
                   {o.profiles?.full_name} ·{" "}
-                  {o.order_type === "delivery" ? "Delivery" : "Pickup"} ·{" "}
+                  {o.order_type === "delivery" ? "Domicilio" : "Para recoger"} ·{" "}
                   {formatCurrency(o.total)}
                 </p>
                 <p className="text-xs text-muted">
-                  {new Date(o.created_at).toLocaleString()}
+                  {new Date(o.created_at).toLocaleString("es-MX")}
                 </p>
               </div>
               <StatusBadge status={o.status} />
@@ -83,6 +83,19 @@ function OrdersList({ restaurantId }: { restaurantId: string }) {
 
             {selected === o.id && selectedOrder && (
               <div className="mt-4 pt-4 border-t border-border space-y-4" onClick={(e) => e.stopPropagation()}>
+                {selectedOrder.whatsapp && (
+                  <p className="text-sm">
+                    <span className="text-muted">WhatsApp: </span>
+                    <a
+                      href={`https://wa.me/${selectedOrder.whatsapp.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-brand"
+                    >
+                      {selectedOrder.whatsapp}
+                    </a>
+                  </p>
+                )}
                 <div className="space-y-1">
                   {selectedOrder.order_items?.map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">

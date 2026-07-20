@@ -2,10 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingBag, Home, ClipboardList, User } from "lucide-react";
+import { ShoppingBag, Home, ClipboardList, User, Search } from "lucide-react";
 import { useCart } from "@/store/cart";
 import { useAuth } from "@/components/providers/auth-provider";
 import { cn } from "@/lib/utils";
+
+/** Only the most specific matching tab is active. */
+function isNavActive(pathname: string, href: string, allHrefs: string[]) {
+  const matches = (h: string) =>
+    h === "/"
+      ? pathname === "/"
+      : pathname === h || pathname.startsWith(`${h}/`);
+  if (!matches(href)) return false;
+  return !allHrefs.some(
+    (other) => other !== href && other.length > href.length && matches(other)
+  );
+}
 
 export function CustomerNav() {
   const pathname = usePathname();
@@ -15,31 +27,37 @@ export function CustomerNav() {
   if (profile && profile.role !== "customer") return null;
 
   const links = [
-    { href: "/", icon: Home, label: "Home" },
-    { href: "/orders", icon: ClipboardList, label: "Orders" },
-    { href: "/cart", icon: ShoppingBag, label: "Cart", badge: itemCount },
-    { href: "/account", icon: User, label: "Account" },
+    { href: "/", icon: Home, label: "Inicio" },
+    { href: "/orders", icon: ClipboardList, label: "Pedidos" },
+    { href: "/cart", icon: ShoppingBag, label: "Carrito", badge: itemCount },
+    { href: "/account", icon: User, label: "Cuenta" },
   ];
+  const hrefs = links.map((l) => l.href);
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 bg-surface border-t border-border safe-bottom md:hidden">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+    <nav className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-border safe-bottom md:hidden">
+      <div className="flex items-stretch justify-around h-[56px] max-w-lg mx-auto">
         {links.map(({ href, icon: Icon, label, badge }) => {
-          const active =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const active = isNavActive(pathname, href, hrefs);
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "relative flex flex-col items-center gap-0.5 px-3 py-1 min-w-[64px]",
-                active ? "text-brand" : "text-muted"
+                "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors",
+                active ? "text-ink" : "text-muted"
               )}
             >
-              <Icon className="size-6" strokeWidth={active ? 2.5 : 2} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon
+                className="size-[22px]"
+                strokeWidth={active ? 2.5 : 1.75}
+                fill={active && href === "/" ? "currentColor" : "none"}
+              />
+              <span className="text-[10px] font-medium leading-none">
+                {label}
+              </span>
               {badge != null && badge > 0 && (
-                <span className="absolute top-0 right-1 size-5 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute top-1 right-[18%] min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">
                   {badge > 9 ? "9+" : badge}
                 </span>
               )}
@@ -56,54 +74,58 @@ export function DesktopHeader() {
   const { profile, user, signOut } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-border">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="font-display text-2xl font-bold tracking-tight">
+    <header className="sticky top-0 z-40 hidden md:block bg-white/95 backdrop-blur-md border-b border-border">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
+        <Link href="/" className="font-display text-2xl font-bold tracking-tight shrink-0">
           Magda<span className="text-brand">Ya</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/" className="text-sm font-medium text-muted hover:text-ink">
-            Restaurants
+        <div className="flex-1 max-w-md relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted" />
+          <input
+            readOnly
+            onFocus={(e) => {
+              e.target.blur();
+              window.location.href = "/";
+            }}
+            placeholder="Comida, restaurantes…"
+            className="w-full h-11 pl-10 pr-4 rounded-full bg-subtle text-sm placeholder:text-muted focus:outline-none cursor-pointer"
+          />
+        </div>
+
+        <div className="flex items-center gap-5 shrink-0">
+          <Link href="/" className="text-sm font-semibold text-ink">
+            Restaurantes
           </Link>
-          <Link
-            href="/orders"
-            className="text-sm font-medium text-muted hover:text-ink"
-          >
-            Orders
+          <Link href="/orders" className="text-sm font-semibold text-muted hover:text-ink">
+            Pedidos
           </Link>
-          <Link
-            href="/cart"
-            className="relative text-sm font-medium text-muted hover:text-ink"
-          >
-            Cart
+          <Link href="/cart" className="relative text-sm font-semibold text-muted hover:text-ink">
+            Carrito
             {itemCount > 0 && (
               <span className="ml-1.5 inline-flex size-5 items-center justify-center rounded-full bg-brand text-white text-[10px] font-bold">
                 {itemCount}
               </span>
             )}
           </Link>
-        </div>
-
-        <div className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="hidden sm:block text-sm text-muted truncate max-w-[140px]">
+              <span className="text-sm text-muted truncate max-w-[120px]">
                 {profile?.full_name}
               </span>
               <button
                 onClick={() => signOut()}
-                className="text-sm font-medium text-muted hover:text-ink"
+                className="text-sm font-semibold text-muted hover:text-ink"
               >
-                Sign out
+                Salir
               </button>
             </>
           ) : (
             <Link
               href="/auth"
-              className="h-10 px-4 rounded-2xl bg-brand text-white text-sm font-semibold inline-flex items-center"
+              className="h-10 px-4 rounded-lg bg-brand text-white text-sm font-bold inline-flex items-center"
             >
-              Sign in
+              Entrar
             </Link>
           )}
         </div>

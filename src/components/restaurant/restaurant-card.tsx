@@ -2,60 +2,66 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Star, Clock } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 import type { Restaurant } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatDeliveryEta } from "@/lib/utils";
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   return (
     <Link
       href={`/restaurants/${restaurant.id}`}
-      className="group block animate-slide-up bg-surface rounded-3xl overflow-hidden border border-border hover:shadow-lg hover:shadow-black/5 transition-all active:scale-[0.99]"
+      className="group block active:opacity-90 transition-opacity"
     >
-      <div className="relative aspect-[16/10] bg-canvas overflow-hidden">
+      <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-subtle">
         {restaurant.cover_url || restaurant.image_url ? (
           <Image
             src={restaurant.cover_url || restaurant.image_url || ""}
             alt={restaurant.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-cover"
             sizes="(max-width:768px) 100vw, 33vw"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-brand/20 to-brand/5 flex items-center justify-center">
-            <span className="font-display text-4xl font-bold text-brand/40">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand/15 to-subtle flex items-center justify-center">
+            <span className="font-display text-4xl font-bold text-brand/30">
               {restaurant.name.charAt(0)}
             </span>
           </div>
         )}
         {!restaurant.is_open && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white font-semibold text-sm bg-black/60 px-3 py-1.5 rounded-full">
-              Closed
+          <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
+            <span className="text-white font-bold text-sm bg-black/70 px-3 py-1.5 rounded-full">
+              Cerrado
             </span>
           </div>
         )}
+        <button
+          type="button"
+          aria-label="Guardar"
+          onClick={(e) => e.preventDefault()}
+          className="absolute top-3 right-3 size-9 rounded-full bg-white/95 shadow-sm flex items-center justify-center active:scale-95"
+        >
+          <Heart className="size-4 text-ink" strokeWidth={2} />
+        </button>
       </div>
-      <div className="p-4">
+
+      <div className="pt-2.5 px-0.5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display font-bold text-lg leading-tight">
+          <h3 className="font-bold text-[16px] leading-tight tracking-tight truncate">
             {restaurant.name}
           </h3>
-          <div className="flex items-center gap-1 text-sm font-semibold shrink-0">
-            <Star className="size-3.5 fill-amber-400 text-amber-400" />
+          <div className="flex items-center gap-0.5 text-[13px] font-semibold shrink-0 bg-subtle rounded-full px-1.5 py-0.5">
+            <Star className="size-3 fill-ink text-ink" />
             {Number(restaurant.rating).toFixed(1)}
           </div>
         </div>
-        <p className="text-sm text-muted mt-0.5 truncate">
-          {restaurant.cuisine || "Restaurant"}
+        <p className="text-[13px] text-muted mt-0.5 truncate">
+          {formatDeliveryEta(
+            restaurant.delivery_eta_range,
+            restaurant.eta_minutes
+          )}
+          {restaurant.cuisine ? ` · ${restaurant.cuisine}` : ""}
         </p>
-        <div className="flex items-center gap-3 mt-2 text-xs text-muted">
-          <span className="flex items-center gap-1">
-            <Clock className="size-3.5" />
-            {restaurant.eta_minutes} min
-          </span>
-          <span>{formatCurrency(restaurant.delivery_fee)} delivery</span>
-        </div>
       </div>
     </Link>
   );

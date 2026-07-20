@@ -12,7 +12,7 @@ import { CheckCircle2, Package } from "lucide-react";
 
 export default function DriverActivePage() {
   return (
-    <DriverLayout title="Active delivery">
+    <DriverLayout title="Entrega activa">
       {(driver) => <ActiveDelivery driver={driver} />}
     </DriverLayout>
   );
@@ -93,16 +93,16 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
   };
 
   if (loading) {
-    return <p className="text-muted text-center py-12">Loading…</p>;
+    return <p className="text-muted text-center py-12">Cargando…</p>;
   }
 
   if (!order) {
     return (
       <div className="text-center py-16 text-muted animate-slide-up">
         <Package className="size-10 mx-auto mb-3 opacity-40" />
-        <p className="font-medium">No active delivery</p>
+        <p className="font-medium">No hay entrega activa</p>
         <p className="text-sm mt-1">
-          Accept a request from the Available tab.
+          Acepta una solicitud en Disponibles.
         </p>
       </div>
     );
@@ -123,7 +123,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
       id: "customer",
       lat: order.delivery_lat,
       lng: order.delivery_lng,
-      label: order.profiles?.full_name || "Customer",
+      label: order.profiles?.full_name || "Cliente",
       type: "customer",
     });
   }
@@ -148,16 +148,31 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
         <div className="space-y-3 text-sm">
           <div>
             <p className="text-xs font-semibold text-muted uppercase tracking-wide">
-              Pickup
+              Recoger
             </p>
             <p className="font-medium">{order.restaurants?.address}</p>
           </div>
           <div>
             <p className="text-xs font-semibold text-muted uppercase tracking-wide">
-              Drop-off
+              Entregar
             </p>
             <p className="font-medium">{order.delivery_address}</p>
           </div>
+          {order.whatsapp && (
+            <div>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wide">
+                WhatsApp
+              </p>
+              <a
+                href={`https://wa.me/${order.whatsapp.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-brand"
+              >
+                {order.whatsapp}
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-border pt-3 space-y-1">
@@ -178,7 +193,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
             loading={updating}
           >
             <Package className="size-5" />
-            Picked up
+            Recogí el pedido
           </Button>
         )}
 
@@ -190,7 +205,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
             loading={updating}
           >
             <CheckCircle2 className="size-5" />
-            Delivered
+            Entregado
           </Button>
         )}
       </div>
