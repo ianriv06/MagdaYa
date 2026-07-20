@@ -9,8 +9,11 @@ import { OrderRequestPopup } from "@/components/driver/order-request-popup";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
+  declineOrderForDriver,
   DRIVER_CLIENT_LOCATION_LABEL,
+  DRIVER_OFFER_SECONDS,
   formatCurrency,
+  getDeclinedOrderIds,
   getDriverEarnings,
 } from "@/lib/utils";
 import type { Driver, Order } from "@/lib/types";
@@ -68,7 +71,8 @@ function AvailableList({ driver }: { driver: Driver }) {
         useOffers = false;
         setOfferMode(false);
       } else if (!error) {
-        const offered = data || [];
+        const declined = new Set(getDeclinedOrderIds(driver.id));
+        const offered = (data || []).filter((o) => !declined.has(o.id));
         setOrders(offered);
         setPopupOrder((current) => {
           if (!driver.is_available) return null;
@@ -91,7 +95,8 @@ function AvailableList({ driver }: { driver: Driver }) {
       .is("driver_id", null)
       .order("created_at", { ascending: true });
 
-    const available = data || [];
+    const declined = new Set(getDeclinedOrderIds(driver.id));
+    const available = (data || []).filter((o) => !declined.has(o.id));
     setOrders(available);
     setPopupOrder((current) => {
       if (!driver.is_available) return null;
@@ -160,6 +165,7 @@ function AvailableList({ driver }: { driver: Driver }) {
   };
 
   const decline = async (orderId: string) => {
+    declineOrderForDriver(driver.id, orderId);
     setPopupOrder((current) => (current?.id === orderId ? null : current));
     setOrders((prev) => prev.filter((o) => o.id !== orderId));
 
@@ -176,7 +182,7 @@ function AvailableList({ driver }: { driver: Driver }) {
   };
 
   return (
-    <div className="space-y-4 animate-slide-up">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">
           {orders.length}{" "}
@@ -192,25 +198,31 @@ function AvailableList({ driver }: { driver: Driver }) {
         </div>
       )}
 
-      {driver.is_available && orders.length === 0 ? (
+      {popupOrder && driver.is_available ? (
+        <div className="flex min-h-[60vh] items-center justify-center py-6">
+          <OrderRequestPopup
+            order={popupOrder}
+            accepting={loadingId === popupOrder.id}
+            onAccept={() => accept(popupOrder.id)}
+            onReject={() => decline(popupOrder.id)}
+          />
+        </div>
+      ) : driver.is_available && orders.length === 0 ? (
         <div className="text-center py-16 text-muted">
           <p className="font-medium">Esperando solicitudes</p>
           <p className="text-sm mt-1">
-            Cuando haya un pedido, te llegará un aviso de 12 segundos.
+            Cuando haya un pedido, te llegará un aviso de {DRIVER_OFFER_SECONDS}{" "}
+            segundos.
           </p>
         </div>
-      ) : null}
-
-      {!driver.is_available && orders.length === 0 ? (
+      ) : !driver.is_available && orders.length === 0 ? (
         <div className="text-center py-16 text-muted">
           <p className="font-medium">No hay solicitudes</p>
           <p className="text-sm mt-1">
             Aparecerán aquí cuando estén listas para recoger.
           </p>
         </div>
-      ) : null}
-
-      {orders.length > 0 && (
+      ) : orders.length > 0 ? (
         <div className="space-y-3">
           {orders.map((order) => (
             <div
@@ -263,16 +275,7 @@ function AvailableList({ driver }: { driver: Driver }) {
             </div>
           ))}
         </div>
-      )}
-
-      {popupOrder && driver.is_available && (
-        <OrderRequestPopup
-          order={popupOrder}
-          accepting={loadingId === popupOrder.id}
-          onAccept={() => accept(popupOrder.id)}
-          onReject={() => decline(popupOrder.id)}
-        />
-      )}
+      ) : null}
     </div>
   );
 }

@@ -85,12 +85,10 @@ BEGIN
   ORDER BY random()
   LIMIT 1;
 
-  -- No eligible drivers left this round — clear declines for a later refresh,
-  -- but do not re-offer immediately (avoids looping the same rejector).
+  -- No eligible drivers left — keep declined list so rejectors are never re-offered
   IF v_driver_id IS NULL THEN
     UPDATE orders
-    SET declined_driver_ids = '{}',
-        offered_driver_id = NULL,
+    SET offered_driver_id = NULL,
         offer_expires_at = NULL
     WHERE id = p_order_id;
     RETURN NULL;
@@ -98,7 +96,7 @@ BEGIN
 
   UPDATE orders
   SET offered_driver_id = v_driver_id,
-      offer_expires_at = NOW() + INTERVAL '12 seconds'
+      offer_expires_at = NOW() + INTERVAL '18 seconds'
   WHERE id = p_order_id;
 
   RETURN v_driver_id;

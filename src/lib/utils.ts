@@ -145,4 +145,25 @@ export function getDriverEarnings(order: { delivery_fee?: number | null }) {
 }
 
 /** Seconds a driver has to accept before the offer moves to someone else. */
-export const DRIVER_OFFER_SECONDS = 12;
+export const DRIVER_OFFER_SECONDS = 18;
+
+const declinedOrdersKey = (driverId: string) =>
+  `magdaya-driver-declined:${driverId}`;
+
+export function getDeclinedOrderIds(driverId: string): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(declinedOrdersKey(driverId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Persist a reject so this driver never sees the order again on this device. */
+export function declineOrderForDriver(driverId: string, orderId: string) {
+  const ids = new Set(getDeclinedOrderIds(driverId));
+  ids.add(orderId);
+  localStorage.setItem(declinedOrdersKey(driverId), JSON.stringify([...ids]));
+}

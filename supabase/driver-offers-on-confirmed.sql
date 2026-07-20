@@ -85,8 +85,7 @@ BEGIN
 
   IF v_driver_id IS NULL THEN
     UPDATE orders
-    SET declined_driver_ids = '{}',
-        offered_driver_id = NULL,
+    SET offered_driver_id = NULL,
         offer_expires_at = NULL
     WHERE id = p_order_id;
     RETURN NULL;
@@ -94,7 +93,7 @@ BEGIN
 
   UPDATE orders
   SET offered_driver_id = v_driver_id,
-      offer_expires_at = NOW() + INTERVAL '12 seconds'
+      offer_expires_at = NOW() + INTERVAL '18 seconds'
   WHERE id = p_order_id;
 
   RETURN v_driver_id;
