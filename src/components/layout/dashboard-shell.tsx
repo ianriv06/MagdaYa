@@ -94,7 +94,7 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-[calc(62px+env(safe-area-inset-bottom,0px))] md:pb-0">
         <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center justify-between md:px-8">
           <h1 className="font-display text-lg font-bold">{title}</h1>
           <button
@@ -106,33 +106,36 @@ export function DashboardShell({
           </button>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">{children}</main>
-
-        <nav className="fixed bottom-0 inset-x-0 z-50 bg-[#2c2c2c] border-t border-white/10 safe-bottom md:hidden">
-          <div className="flex items-center justify-around h-[62px]">
-            {nav.map((item) => {
-              const active = isNavActive(pathname, item.href, hrefs);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex flex-col items-center gap-0 px-1.5 min-w-[56px] transition-colors",
-                    "text-brand"
-                  )}
-                >
-                  <span className="text-brand">
-                    <NavIcon icon={item.icon} filled={active} />
-                  </span>
-                  <span className="text-[13px] font-medium leading-none text-brand">
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
+        <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
+
+      <nav
+        className="fixed bottom-0 inset-x-0 z-[1100] flex md:hidden bg-[#2c2c2c] border-t border-white/10 safe-bottom"
+        aria-label="Navegación"
+      >
+        <div className="flex w-full items-stretch justify-around h-[62px]">
+          {nav.map((item) => {
+            const active = isNavActive(pathname, item.href, hrefs);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-1 flex-col items-center justify-center gap-0.5 px-0.5 min-w-0 max-w-[5.5rem] transition-colors",
+                  "text-brand"
+                )}
+              >
+                <span className="text-brand shrink-0">
+                  <NavIcon icon={item.icon} filled={active} />
+                </span>
+                <span className="text-[11px] font-medium leading-tight text-center truncate w-full text-brand">
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

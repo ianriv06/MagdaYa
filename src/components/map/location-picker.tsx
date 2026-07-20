@@ -108,7 +108,7 @@ export function LocationPicker({
           showMarker={hasPin}
         />
         {!hasPin && (
-          <div className="absolute inset-x-0 bottom-3 flex justify-center pointer-events-none z-[1000]">
+          <div className="absolute inset-x-0 bottom-3 flex justify-center pointer-events-none z-10">
             <span className="bg-ink/85 text-white text-xs font-medium px-3 py-1.5 rounded-full">
               Toca el mapa para fijar tu ubicación
             </span>

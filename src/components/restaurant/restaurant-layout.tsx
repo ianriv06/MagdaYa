@@ -48,7 +48,7 @@ const nav = [
   },
   {
     href: "/restaurant/settings",
-    label: "Configuración",
+    label: "Ajustes",
     icon: <Settings className="size-[26px]" />,
   },
 ];

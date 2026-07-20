@@ -19,7 +19,7 @@ const nav = [
   },
   {
     href: "/admin/payment",
-    label: "QR de pago",
+    label: "QR",
     icon: <QrCode className="size-[26px]" />,
   },
 ];
