@@ -58,7 +58,7 @@ function AvailableList({ driver }: { driver: Driver }) {
       const { data, error } = await supabase
         .from("orders")
         .select("*, restaurants(*), order_items(*)")
-        .eq("status", "in_progress")
+        .eq("status", "confirmed")
         .eq("order_type", "delivery")
         .eq("offered_driver_id", driver.id)
         .is("driver_id", null)
@@ -86,7 +86,7 @@ function AvailableList({ driver }: { driver: Driver }) {
     const { data } = await supabase
       .from("orders")
       .select("*, restaurants(*), order_items(*)")
-      .eq("status", "in_progress")
+      .eq("status", "confirmed")
       .eq("order_type", "delivery")
       .is("driver_id", null)
       .order("created_at", { ascending: true });
@@ -145,7 +145,7 @@ function AvailableList({ driver }: { driver: Driver }) {
 
     const { error: updateError } = await supabase
       .from("orders")
-      .update({ driver_id: driver.id })
+      .update({ driver_id: driver.id, status: "in_progress" })
       .eq("id", orderId)
       .is("driver_id", null);
 

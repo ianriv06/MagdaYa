@@ -199,12 +199,14 @@ CREATE TRIGGER on_order_status_change
   BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
 
--- When admin confirms → auto set in_progress
+-- When admin confirms → pickup goes to prep; delivery stays confirmed for driver offer
 CREATE OR REPLACE FUNCTION auto_in_progress_on_confirm()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.status = 'confirmed' AND OLD.status IN ('money_paid', 'placed') THEN
-    NEW.status = 'in_progress';
+    IF NEW.order_type = 'pickup' THEN
+      NEW.status = 'in_progress';
+    END IF;
   END IF;
   RETURN NEW;
 END;
@@ -298,7 +300,7 @@ CREATE POLICY "Customers see own orders"
       SELECT 1 FROM drivers d
       WHERE d.user_id = auth.uid()
         AND d.id = offered_driver_id
-        AND status = 'in_progress'
+        AND status = 'confirmed'
         AND driver_id IS NULL
         AND order_type = 'delivery'
     )
@@ -332,7 +334,7 @@ CREATE POLICY "View order items with order access"
           SELECT 1 FROM drivers d
           WHERE d.user_id = auth.uid()
             AND d.id = o.offered_driver_id
-            AND o.status = 'in_progress'
+            AND o.status = 'confirmed'
             AND o.driver_id IS NULL
         )
       )

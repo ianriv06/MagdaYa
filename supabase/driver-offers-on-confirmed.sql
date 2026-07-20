@@ -1,20 +1,20 @@
--- Random one-driver-at-a-time delivery offers
+-- Offer deliveries to drivers only after admin confirms ("Pedido confirmado")
 -- Run in Supabase SQL Editor
 
-ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS offered_driver_id UUID REFERENCES drivers(id);
+-- Delivery orders stay at "confirmed" until a driver accepts.
+-- Pickup still auto-moves to in_progress after confirm.
+CREATE OR REPLACE FUNCTION auto_in_progress_on_confirm()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'confirmed' AND OLD.status IN ('money_paid', 'placed') THEN
+    IF NEW.order_type = 'pickup' THEN
+      NEW.status = 'in_progress';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS offer_expires_at TIMESTAMPTZ;
-
-ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS declined_driver_ids UUID[] NOT NULL DEFAULT '{}';
-
-CREATE INDEX IF NOT EXISTS idx_orders_offered_driver
-  ON orders(offered_driver_id)
-  WHERE offered_driver_id IS NOT NULL AND driver_id IS NULL;
-
--- Pick a random online driver (excluding declined / already busy) and offer the order for 12s
 CREATE OR REPLACE FUNCTION assign_delivery_offer(p_order_id UUID)
 RETURNS UUID
 LANGUAGE plpgsql
@@ -45,7 +45,6 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- Keep an active (non-expired) offer as-is
   IF EXISTS (
     SELECT 1 FROM orders
     WHERE id = p_order_id
@@ -56,7 +55,6 @@ BEGIN
     RETURN (SELECT offered_driver_id FROM orders WHERE id = p_order_id);
   END IF;
 
-  -- Expire previous offer into declined list
   UPDATE orders
   SET declined_driver_ids = CASE
         WHEN offered_driver_id IS NOT NULL
@@ -85,8 +83,6 @@ BEGIN
   ORDER BY random()
   LIMIT 1;
 
-  -- No eligible drivers left this round — clear declines for a later refresh,
-  -- but do not re-offer immediately (avoids looping the same rejector).
   IF v_driver_id IS NULL THEN
     UPDATE orders
     SET declined_driver_ids = '{}',
@@ -105,38 +101,6 @@ BEGIN
 END;
 $$;
 
--- Current offered driver rejects (or times out) → offer to another online driver
-CREATE OR REPLACE FUNCTION reject_delivery_offer(p_order_id UUID)
-RETURNS UUID
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_driver_id UUID;
-BEGIN
-  SELECT id INTO v_driver_id FROM drivers WHERE user_id = auth.uid();
-  IF v_driver_id IS NULL THEN
-    RAISE EXCEPTION 'Not a driver';
-  END IF;
-
-  UPDATE orders
-  SET declined_driver_ids = CASE
-        WHEN v_driver_id = ANY(COALESCE(declined_driver_ids, '{}'))
-        THEN COALESCE(declined_driver_ids, '{}')
-        ELSE array_append(COALESCE(declined_driver_ids, '{}'), v_driver_id)
-      END,
-      offered_driver_id = NULL,
-      offer_expires_at = NULL
-  WHERE id = p_order_id
-    AND driver_id IS NULL
-    AND (offered_driver_id IS NULL OR offered_driver_id = v_driver_id);
-
-  RETURN assign_delivery_offer(p_order_id);
-END;
-$$;
-
--- Offered driver accepts → becomes assigned driver
 CREATE OR REPLACE FUNCTION accept_delivery_offer(p_order_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -168,7 +132,6 @@ BEGIN
 END;
 $$;
 
--- Sweep: assign / refresh expired offers for all ready delivery orders
 CREATE OR REPLACE FUNCTION refresh_delivery_offers()
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -179,6 +142,17 @@ DECLARE
   r RECORD;
   n INTEGER := 0;
 BEGIN
+  -- Clear stale offers on orders that are no longer confirmed / already assigned
+  UPDATE orders
+  SET offered_driver_id = NULL,
+      offer_expires_at = NULL
+  WHERE offered_driver_id IS NOT NULL
+    AND (
+      driver_id IS NOT NULL
+      OR status <> 'confirmed'
+      OR order_type <> 'delivery'
+    );
+
   FOR r IN
     SELECT id FROM orders
     WHERE status = 'confirmed'
@@ -198,7 +172,6 @@ BEGIN
 END;
 $$;
 
--- When an order becomes ready for delivery, offer it to a random online driver
 CREATE OR REPLACE FUNCTION offer_delivery_on_ready()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -223,12 +196,7 @@ CREATE TRIGGER on_order_ready_for_delivery
   FOR EACH ROW
   EXECUTE FUNCTION offer_delivery_on_ready();
 
-GRANT EXECUTE ON FUNCTION assign_delivery_offer(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION reject_delivery_offer(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION accept_delivery_offer(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION refresh_delivery_offers() TO authenticated;
-
--- Drivers only see orders offered to them (or already assigned)
+-- Drivers only see confirmed offers (or already assigned)
 DROP POLICY IF EXISTS "Customers see own orders" ON orders;
 CREATE POLICY "Customers see own orders"
   ON orders FOR SELECT TO authenticated
@@ -267,3 +235,6 @@ CREATE POLICY "View order items with order access"
       )
     )
   );
+
+-- Re-offer any delivery orders already stuck in confirmed without a driver
+SELECT refresh_delivery_offers();

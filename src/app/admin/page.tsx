@@ -57,14 +57,14 @@ function AdminOrders() {
     setUpdating(orderId);
     await supabase.from("orders").update({ status }).eq("id", orderId);
 
-    // Confirming should move into prep. DB trigger may do this; if not, force it.
+    // Pickup: move into prep after confirm. Delivery stays "confirmed" so drivers get the offer.
     if (status === "confirmed") {
       const { data } = await supabase
         .from("orders")
-        .select("status")
+        .select("status, order_type")
         .eq("id", orderId)
         .single();
-      if (data?.status === "confirmed") {
+      if (data?.status === "confirmed" && data.order_type === "pickup") {
         await supabase
           .from("orders")
           .update({ status: "in_progress" })
