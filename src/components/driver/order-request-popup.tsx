@@ -65,12 +65,12 @@ export function OrderRequestPopup({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/50 animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="order-request-title"
     >
-      <div className="w-full max-w-md rounded-3xl bg-surface border border-border shadow-xl p-5 space-y-5 animate-slide-up safe-bottom">
+      <div className="w-full max-w-md rounded-3xl bg-surface border border-border shadow-xl p-5 space-y-5 animate-slide-up">
         <div className="flex items-start gap-4">
           <div
             className="relative shrink-0"

@@ -113,7 +113,7 @@ function AvailableList({ driver }: { driver: Driver }) {
 
     const interval = window.setInterval(() => {
       if (driver.is_available) load();
-    }, 4000);
+    }, 1000);
 
     return () => {
       supabase.removeChannel(channel);
