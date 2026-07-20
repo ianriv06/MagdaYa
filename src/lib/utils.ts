@@ -18,8 +18,6 @@ export function formatCurrency(amount: number | string) {
 /** Flat delivery fee in Bs */
 export const DELIVERY_FEE = 20;
 
-export type DeliveryEtaRange = "15-30" | "30-60" | "60+";
-
 export const DELIVERY_ETA_OPTIONS: {
   value: DeliveryEtaRange;
   label: string;
