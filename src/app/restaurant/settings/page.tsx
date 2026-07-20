@@ -11,6 +11,12 @@ import {
   DELIVERY_ETA_OPTIONS,
   normalizeDeliveryEtaRange,
 } from "@/lib/utils";
+import {
+  fileToCompressedDataUrl,
+  formatCheckoutError,
+  isBucketNotFoundError,
+} from "@/lib/receipt-upload";
+import { Upload } from "lucide-react";
 
 export default function RestaurantSettingsPage() {
   return (
@@ -33,36 +39,128 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
     )
   );
   const [isOpen, setIsOpen] = useState(restaurant.is_open);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState(
+    restaurant.cover_url || restaurant.image_url || ""
+  );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  const uploadListingImage = async (file: File) => {
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${restaurant.id}/listing-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("restaurant-images")
+      .upload(path, file, { upsert: true });
+
+    if (upErr) {
+      if (!isBucketNotFoundError(upErr)) throw upErr;
+      return fileToCompressedDataUrl(file, 1200, 0.78);
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("restaurant-images").getPublicUrl(path);
+    return publicUrl;
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSaving(true);
-    const { error: saveError } = await supabase
-      .from("restaurants")
-      .update({
+
+    try {
+      const payload: Record<string, unknown> = {
         name,
         description,
         cuisine,
         address,
         delivery_eta_range: deliveryEta,
         is_open: isOpen,
-      })
-      .eq("id", restaurant.id);
-    setSaving(false);
-    if (saveError) {
-      setError(saveError.message);
-      return;
+      };
+
+      if (imageFile) {
+        const url = await uploadListingImage(imageFile);
+        // Listing cards use cover_url || image_url — keep both in sync
+        payload.cover_url = url;
+        payload.image_url = url;
+        setImagePreview(url);
+        setImageFile(null);
+      } else if (
+        !imagePreview &&
+        (restaurant.cover_url || restaurant.image_url)
+      ) {
+        payload.cover_url = null;
+        payload.image_url = null;
+      }
+
+      const { error: saveError } = await supabase
+        .from("restaurants")
+        .update(payload)
+        .eq("id", restaurant.id);
+
+      if (saveError) throw saveError;
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: unknown) {
+      setError(formatCheckoutError(err));
+    } finally {
+      setSaving(false);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
 
   return (
     <form onSubmit={save} className="max-w-md space-y-4 animate-slide-up">
+      <div className="space-y-2">
+        <p className="block text-sm font-semibold text-ink">
+          Imagen del listado
+        </p>
+        <p className="text-xs text-muted">
+          Se muestra en la página de inicio y en la ficha de tu restaurante.
+        </p>
+        <label className="relative block aspect-[16/9] rounded-xl border border-dashed border-border bg-subtle overflow-hidden cursor-pointer hover:border-ink transition-colors">
+          {imagePreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imagePreview}
+              alt="Imagen del listado"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted text-sm">
+              <Upload className="size-7 opacity-50" />
+              <span className="font-medium text-ink">Toca para subir imagen</span>
+              <span className="text-xs">JPG, PNG o WebP</span>
+            </div>
+          )}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setImageFile(file);
+              setImagePreview(URL.createObjectURL(file));
+            }}
+          />
+        </label>
+        {imagePreview && (
+          <button
+            type="button"
+            className="text-xs text-muted font-medium underline"
+            onClick={() => {
+              setImageFile(null);
+              setImagePreview("");
+            }}
+          >
+            Quitar imagen
+          </button>
+        )}
+      </div>
+
       <Input
         id="name"
         label="Nombre del restaurante"
@@ -84,7 +182,10 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
         required
       />
       <div className="space-y-1.5">
-        <label htmlFor="delivery-eta" className="block text-sm font-medium text-ink">
+        <label
+          htmlFor="delivery-eta"
+          className="block text-sm font-medium text-ink"
+        >
           Tiempo de entrega (min)
         </label>
         <select

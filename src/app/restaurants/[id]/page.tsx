@@ -83,6 +83,11 @@ export default function RestaurantDetailPage() {
             fill
             className="object-cover"
             priority
+            unoptimized={(
+              restaurant.cover_url ||
+              restaurant.image_url ||
+              ""
+            ).startsWith("data:")}
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-brand/30 to-subtle" />

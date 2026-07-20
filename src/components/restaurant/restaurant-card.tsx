@@ -20,6 +20,11 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             fill
             className="object-cover"
             sizes="(max-width:768px) 100vw, 33vw"
+            unoptimized={(
+              restaurant.cover_url ||
+              restaurant.image_url ||
+              ""
+            ).startsWith("data:")}
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-brand/15 to-subtle flex items-center justify-center">
