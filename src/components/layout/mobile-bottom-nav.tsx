@@ -1,25 +1,14 @@
-"use client";
-
-import { useEffect, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import type { ReactNode } from "react";
 
 /**
- * Renders the mobile bottom bar on document.body so it isn't clipped or
- * broken by parent flex/transform stacking (common iOS Safari bug).
+ * Fixed bottom bar for mobile. Rendered inline (server-side) so it shows even
+ * before JS hydrates; .mobile-bottom-nav CSS handles fixed positioning,
+ * z-index and hiding on desktop widths.
  */
 export function MobileBottomNav({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return createPortal(
+  return (
     <nav className="mobile-bottom-nav" aria-label="Navegación">
       {children}
-    </nav>,
-    document.body
+    </nav>
   );
 }

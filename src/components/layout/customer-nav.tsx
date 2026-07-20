@@ -22,10 +22,6 @@ function isNavActive(pathname: string, href: string, allHrefs: string[]) {
 export function CustomerNav() {
   const pathname = usePathname();
   const itemCount = useCart((s) => s.itemCount());
-  const { profile } = useAuth();
-
-  // Staff roles use DashboardShell nav — don't show customer tabs on top
-  if (profile && profile.role !== "customer") return null;
 
   const links = [
     { href: "/", icon: Home, label: "Inicio" },
