@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
 import { Button } from "@/components/ui/button";
-import { getDashboardPath, ROLE_LABELS } from "@/lib/utils";
+import { getDashboardPath, ROLE_LABELS, isPhoneAuthEmail } from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
 
 export default function AccountPage() {
@@ -32,10 +32,12 @@ export default function AccountPage() {
                 {profile?.full_name?.charAt(0)?.toUpperCase() || "U"}
               </div>
               <h2 className="font-semibold text-lg">{profile?.full_name}</h2>
-              <p className="text-sm text-muted">{profile?.email}</p>
-              {profile?.phone && (
+              {profile?.phone ? (
                 <p className="text-sm text-muted">{profile.phone}</p>
-              )}
+              ) : null}
+              {profile?.email && !isPhoneAuthEmail(profile.email) ? (
+                <p className="text-sm text-muted">{profile.email}</p>
+              ) : null}
               <p className="text-xs text-muted mt-2">
                 Rol:{" "}
                 {profile?.role

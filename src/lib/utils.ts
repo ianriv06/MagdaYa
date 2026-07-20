@@ -18,6 +18,25 @@ export function formatCurrency(amount: number | string) {
 /** Flat delivery fee in Bs */
 export const DELIVERY_FEE = 20;
 
+/** Synthetic email domain so Supabase Auth can use phone as the login identity. */
+export const PHONE_AUTH_DOMAIN = "phone.magdaya.app";
+
+/** Digits only from a phone string (e.g. "71234567" or "+591 7123-4567"). */
+export function normalizePhone(phone: string) {
+  return phone.replace(/\D/g, "");
+}
+
+/** Maps a phone number to the synthetic email used for password auth. */
+export function phoneToAuthEmail(phone: string) {
+  const digits = normalizePhone(phone);
+  if (!digits) return "";
+  return `${digits}@${PHONE_AUTH_DOMAIN}`;
+}
+
+export function isPhoneAuthEmail(email: string | null | undefined) {
+  return Boolean(email?.endsWith(`@${PHONE_AUTH_DOMAIN}`));
+}
+
 export const DELIVERY_ETA_OPTIONS: {
   value: DeliveryEtaRange;
   label: string;

@@ -101,7 +101,7 @@ export function DashboardShell({
         <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">{children}</main>
 
         <nav className="fixed bottom-0 inset-x-0 z-50 bg-surface border-t border-border safe-bottom md:hidden">
-          <div className="flex items-center justify-around h-16">
+          <div className="flex items-center justify-around h-[68px]">
             {nav.map((item) => {
               const active = isNavActive(pathname, item.href, hrefs);
               return (
@@ -118,7 +118,7 @@ export function DashboardShell({
                   </span>
                   <span
                     className={cn(
-                      "text-[10px] font-medium",
+                      "text-[12px] font-medium",
                       active ? "text-brand" : "text-muted"
                     )}
                   >

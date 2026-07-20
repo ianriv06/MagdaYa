@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency, DELIVERY_FEE } from "@/lib/utils";
+import {
+  fileToCompressedDataUrl,
+  isBucketNotFoundError,
+} from "@/lib/receipt-upload";
 import { QrCode, MapPin, CheckCircle2, MessageCircle, Upload } from "lucide-react";
 import type { PaymentSettings, Restaurant } from "@/lib/types";
 
@@ -141,14 +145,22 @@ export default function CheckoutPage() {
 
       const ext = receiptFile.name.split(".").pop() || "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
+      let receiptUrl: string;
+
       const { error: uploadError } = await supabase.storage
         .from("payment-receipts")
         .upload(path, receiptFile);
-      if (uploadError) throw uploadError;
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("payment-receipts").getPublicUrl(path);
+      if (uploadError) {
+        if (!isBucketNotFoundError(uploadError)) throw uploadError;
+        // Storage bucket missing — store a compressed image on the order row
+        receiptUrl = await fileToCompressedDataUrl(receiptFile);
+      } else {
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("payment-receipts").getPublicUrl(path);
+        receiptUrl = publicUrl;
+      }
 
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -166,7 +178,7 @@ export default function CheckoutPage() {
           delivery_lng: orderType === "delivery" ? lng : restaurant.lng,
           customer_notes: notes || null,
           whatsapp: whatsappClean,
-          payment_receipt_url: publicUrl,
+          payment_receipt_url: receiptUrl,
         })
         .select()
         .single();
@@ -322,8 +334,7 @@ export default function CheckoutPage() {
               )}
               <input
                 type="file"
-                accept="image/*"
-                capture="environment"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 onChange={(e) => {
                   const file = e.target.files?.[0];

@@ -6,7 +6,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getDashboardPath, cn, ROLE_LABELS } from "@/lib/utils";
+import {
+  getDashboardPath,
+  cn,
+  ROLE_LABELS,
+  normalizePhone,
+  phoneToAuthEmail,
+} from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
 import { Bike, ChefHat, ShoppingBag, Shield, ArrowLeft } from "lucide-react";
 
@@ -42,6 +48,10 @@ const ROLES: {
   },
 ];
 
+function usesPhoneAuth(r: UserRole) {
+  return r === "customer" || r === "restaurant" || r === "driver";
+}
+
 export default function AuthPage() {
   const [mode, setMode] = useState<"select" | "login" | "signup">("select");
   const [role, setRole] = useState<UserRole>("customer");
@@ -60,6 +70,10 @@ export default function AuthPage() {
     setRole(r);
     setMode(m);
     setError("");
+    setEmail("");
+    setPhone("");
+    setPassword("");
+    setFullName("");
   };
 
   const formatError = (err: unknown) => {
@@ -71,8 +85,9 @@ export default function AuthPage() {
         status?: number;
         error_description?: string;
       };
-      const parts = [e.message, e.error_description, e.code]
-        .filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+      const parts = [e.message, e.error_description, e.code].filter(
+        (p): p is string => typeof p === "string" && p.trim().length > 0
+      );
       if (parts.length) return parts.join(" — ");
     }
     if (typeof err === "object" && err !== null) {
@@ -97,14 +112,26 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      const phoneAuth = usesPhoneAuth(role);
+      let authEmail = email.trim();
+      let phoneDigits = "";
+
+      if (phoneAuth) {
+        phoneDigits = normalizePhone(phone);
+        if (phoneDigits.length < 7) {
+          throw new Error("Ingresa un número de teléfono válido.");
+        }
+        authEmail = phoneToAuthEmail(phoneDigits);
+      }
+
       if (mode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: authEmail,
           password,
           options: {
             data: {
               full_name: fullName.trim(),
-              phone: phone.trim() || null,
+              phone: phoneAuth ? phoneDigits : phone.trim() || null,
               role,
             },
           },
@@ -115,14 +142,13 @@ export default function AuthPage() {
             "La cuenta no se creó (respuesta vacía). Revisa Authentication → Users en Supabase."
           );
         }
-        // Wait briefly for profile trigger
         await new Promise((r) => setTimeout(r, 400));
         router.push(next || getDashboardPath(role));
         router.refresh();
       } else {
         const { data, error: signInError } =
           await supabase.auth.signInWithPassword({
-            email: email.trim(),
+            email: authEmail,
             password,
           });
         if (signInError) throw signInError;
@@ -222,6 +248,7 @@ export default function AuthPage() {
 
   const roleMeta = ROLES.find((r) => r.id === role)!;
   const Icon = roleMeta.icon;
+  const phoneAuth = usesPhoneAuth(role);
 
   return (
     <div className="min-h-dvh bg-canvas">
@@ -248,34 +275,39 @@ export default function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
-              <>
-                <Input
-                  id="fullName"
-                  label="Nombre completo"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  autoComplete="name"
-                />
-                <Input
-                  id="phone"
-                  label="Teléfono"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  autoComplete="tel"
-                />
-              </>
+              <Input
+                id="fullName"
+                label="Nombre completo"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                autoComplete="name"
+              />
             )}
-            <Input
-              id="email"
-              label="Correo"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+
+            {phoneAuth ? (
+              <Input
+                id="phone"
+                label="Teléfono"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                autoComplete="tel"
+                placeholder="71234567"
+              />
+            ) : (
+              <Input
+                id="email"
+                label="Correo"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            )}
+
             <Input
               id="password"
               label="Contraseña"
