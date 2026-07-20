@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 import { DEFAULT_DELIVERY_ETA } from "@/lib/utils";
 import type { Restaurant } from "@/lib/types";
+import {
+  LocationPicker,
+  type PickedLocation,
+} from "@/components/map/location-picker";
 
 const nav = [
   {
@@ -105,28 +109,32 @@ function SetupRestaurant({
   const { user } = useAuth();
   const supabase = createClient();
   const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
   const [cuisine, setCuisine] = useState("");
   const [description, setDescription] = useState("");
+  const [location, setLocation] = useState<PickedLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!location) {
+      setError("Marca la ubicación exacta de tu restaurante en el mapa");
+      return;
+    }
     setLoading(true);
     setError("");
 
     const payload = {
       owner_id: user.id,
       name,
-      address,
+      address: location.address,
       cuisine,
       description,
       delivery_eta_range: DEFAULT_DELIVERY_ETA,
       eta_minutes: 25,
-      lat: 40.7128 + Math.random() * 0.05,
-      lng: -74.006 + Math.random() * 0.05,
+      lat: location.lat,
+      lng: location.lng,
       image_url: `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80`,
       cover_url: `https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80`,
     };
@@ -171,7 +179,7 @@ function SetupRestaurant({
         Configura tu restaurante
       </h2>
       <p className="text-muted text-sm mb-6">
-        Cuéntanos sobre tu local para empezar a recibir pedidos.
+        Cuéntanos sobre tu local y marca su ubicación exacta en el mapa.
       </p>
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5">
@@ -193,13 +201,14 @@ function SetupRestaurant({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Dirección</label>
-          <input
-            className="w-full h-12 px-4 rounded-2xl border-2 border-border bg-surface focus:outline-none focus:border-brand"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            required
-          />
+          <label className="text-sm font-medium">
+            Ubicación en el mapa <span className="text-danger">*</span>
+          </label>
+          <p className="text-xs text-muted mb-2">
+            Toca o arrastra el pin hasta la dirección exacta de tu local. Los
+            clientes verán esta ubicación en sus pedidos.
+          </p>
+          <LocationPicker value={location} onChange={setLocation} />
         </div>
         <div className="space-y-1.5">
           <label className="text-sm font-medium">Descripción</label>
@@ -209,9 +218,7 @@ function SetupRestaurant({
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
-        {error && (
-          <p className="text-sm text-danger">{error}</p>
-        )}
+        {error && <p className="text-sm text-danger">{error}</p>}
         <button
           type="submit"
           disabled={loading}

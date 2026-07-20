@@ -45,6 +45,19 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
 ```
 
+### Optional: WhatsApp order confirmations
+To automatically message the customer when they place an order, add Meta WhatsApp Cloud API credentials to `.env.local` (and Vercel):
+
+```
+WHATSAPP_TOKEN=...
+WHATSAPP_PHONE_NUMBER_ID=...
+WHATSAPP_TEMPLATE_NAME=order_confirmation   # optional but recommended
+WHATSAPP_TEMPLATE_LANG=es
+```
+
+Setup: [Meta for Developers](https://developers.facebook.com/) → create an app → WhatsApp → API Setup.  
+Outbound messages to customers who never messaged you first usually require an **approved message template**.
+
 ### 6. Install & run
 ```bash
 npm install

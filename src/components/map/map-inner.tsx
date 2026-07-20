@@ -44,7 +44,7 @@ export default function MapInner({ markers }: { markers: MapMarker[] }) {
   const center: [number, number] =
     markers.length > 0
       ? [markers[0].lat, markers[0].lng]
-      : [40.7128, -74.006];
+      : [-17.7833, -63.1821];
 
   return (
     <MapContainer

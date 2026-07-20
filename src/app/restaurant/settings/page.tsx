@@ -18,6 +18,10 @@ import {
   isBucketNotFoundError,
   isMissingColumnError,
 } from "@/lib/receipt-upload";
+import {
+  LocationPicker,
+  type PickedLocation,
+} from "@/components/map/location-picker";
 import { Upload } from "lucide-react";
 
 export default function RestaurantSettingsPage() {
@@ -33,7 +37,11 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
   const [name, setName] = useState(restaurant.name);
   const [description, setDescription] = useState(restaurant.description || "");
   const [cuisine, setCuisine] = useState(restaurant.cuisine || "");
-  const [address, setAddress] = useState(restaurant.address);
+  const [location, setLocation] = useState<PickedLocation>({
+    lat: restaurant.lat,
+    lng: restaurant.lng,
+    address: restaurant.address,
+  });
   const [deliveryEta, setDeliveryEta] = useState<DeliveryEtaRange>(
     normalizeDeliveryEtaRange(
       restaurant.delivery_eta_range,
@@ -77,7 +85,9 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
         name,
         description,
         cuisine,
-        address,
+        address: location.address,
+        lat: location.lat,
+        lng: location.lng,
         delivery_eta_range: deliveryEta,
         eta_minutes: deliveryEtaToMinutes(deliveryEta),
         is_open: isOpen,
@@ -187,13 +197,15 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
         value={cuisine}
         onChange={(e) => setCuisine(e.target.value)}
       />
-      <Input
-        id="address"
-        label="Dirección"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        required
-      />
+      <div className="space-y-1.5">
+        <p className="block text-sm font-semibold text-ink">
+          Ubicación en el mapa
+        </p>
+        <p className="text-xs text-muted">
+          Los clientes ven esta dirección y el mapa después de pedir.
+        </p>
+        <LocationPicker value={location} onChange={setLocation} />
+      </div>
       <div className="space-y-1.5">
         <label
           htmlFor="delivery-eta"

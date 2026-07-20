@@ -193,6 +193,21 @@ export default function CheckoutPage() {
         note: "Pedido realizado, esperando confirmación",
       });
 
+      // Fire-and-forget WhatsApp confirmation (requires WhatsApp Cloud API env vars)
+      void fetch("/api/notify-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: whatsappClean,
+          orderId: order.id,
+          restaurantName: restaurant.name,
+          totalLabel: formatCurrency(total),
+          orderType,
+        }),
+      }).catch(() => {
+        /* non-blocking */
+      });
+
       clearCart();
       router.push(`/orders/${order.id}`);
     } catch (err: unknown) {

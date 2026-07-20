@@ -9,7 +9,7 @@ import { OrderMap, type MapMarker } from "@/components/map/order-map";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import type { Order } from "@/lib/types";
-import { ArrowLeft, Bike, Store } from "lucide-react";
+import { ArrowLeft, Bike, Store, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function OrderTrackingPage() {
@@ -113,7 +113,7 @@ export default function OrderTrackingPage() {
   }
 
   const showMap =
-    order.order_type === "delivery" &&
+    Boolean(order.restaurants) &&
     !["delivered", "cancelled"].includes(order.status);
 
   return (
@@ -131,7 +131,10 @@ export default function OrderTrackingPage() {
       </header>
 
       {showMap && markers.length > 0 && (
-        <OrderMap markers={markers} className="h-56 md:h-72 rounded-none border-0 border-b" />
+        <OrderMap
+          markers={markers}
+          className="h-56 md:h-72 rounded-none border-0 border-b"
+        />
       )}
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-slide-up">
@@ -142,14 +145,36 @@ export default function OrderTrackingPage() {
             <Store className="size-4" />
           )}
           {order.order_type === "delivery" ? "Domicilio" : "Para recoger"}
-          {order.delivery_address && (
-            <span className="truncate">· {order.delivery_address}</span>
-          )}
         </div>
+
+        {order.restaurants && (
+          <section className="rounded-3xl bg-surface border border-border p-5 space-y-2">
+            <h2 className="font-semibold flex items-center gap-2">
+              <MapPin className="size-4 text-brand" />
+              Ubicación del restaurante
+            </h2>
+            <p className="text-sm text-ink leading-snug">
+              {order.restaurants.address}
+            </p>
+            <p className="text-xs text-muted">
+              {order.order_type === "pickup"
+                ? "Ve a esta dirección para recoger tu pedido."
+                : "El pedido sale desde esta ubicación."}
+            </p>
+          </section>
+        )}
+
+        {order.order_type === "delivery" && (
+          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
+            Una vez confirmado, el repartidor te escribirá por WhatsApp para
+            pedirte tu ubicación de entrega.
+          </div>
+        )}
 
         {order.whatsapp && (
           <p className="text-sm text-muted">
-            WhatsApp: <span className="font-semibold text-ink">{order.whatsapp}</span>
+            WhatsApp:{" "}
+            <span className="font-semibold text-ink">{order.whatsapp}</span>
           </p>
         )}
 
