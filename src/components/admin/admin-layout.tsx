@@ -1,0 +1,52 @@
+"use client";
+
+import { useEffect, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/auth-provider";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { QrCode, ClipboardList } from "lucide-react";
+
+const nav = [
+  {
+    href: "/admin",
+    label: "Orders",
+    icon: <ClipboardList className="size-5" />,
+  },
+  {
+    href: "/admin/payment",
+    label: "Payment QR",
+    icon: <QrCode className="size-5" />,
+  },
+];
+
+export function AdminLayout({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  const { profile, loading, user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user || profile?.role !== "admin") {
+      router.replace("/auth");
+    }
+  }, [user, profile, loading, router]);
+
+  if (loading || !profile || profile.role !== "admin") {
+    return (
+      <div className="min-h-dvh flex items-center justify-center text-muted">
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <DashboardShell title={title} nav={nav} roleLabel="Super Admin">
+      {children}
+    </DashboardShell>
+  );
+}
