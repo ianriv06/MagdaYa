@@ -55,9 +55,15 @@ function AdminOrders() {
 
   const updateStatus = async (orderId: string, status: OrderStatus) => {
     setUpdating(orderId);
+    const { data: before } = await supabase
+      .from("orders")
+      .select("order_type")
+      .eq("id", orderId)
+      .single();
+
     await supabase.from("orders").update({ status }).eq("id", orderId);
 
-    // Pickup: move into prep after confirm. Delivery stays "confirmed" so drivers get the offer.
+    // Pickup: move into prep after confirm. Delivery stays confirmable for driver offers.
     if (status === "confirmed") {
       const { data } = await supabase
         .from("orders")
@@ -69,6 +75,12 @@ function AdminOrders() {
           .from("orders")
           .update({ status: "in_progress" })
           .eq("id", orderId);
+      }
+
+      // Kick driver assignment right after confirm (delivery)
+      if ((before?.order_type || data?.order_type) === "delivery") {
+        await supabase.rpc("assign_delivery_offer", { p_order_id: orderId });
+        await supabase.rpc("refresh_delivery_offers");
       }
     }
 
