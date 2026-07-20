@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency, DELIVERY_FEE } from "@/lib/utils";
 import {
   fileToCompressedDataUrl,
+  formatCheckoutError,
   isBucketNotFoundError,
+  isMissingColumnError,
 } from "@/lib/receipt-upload";
 import { QrCode, MapPin, CheckCircle2, MessageCircle, Upload } from "lucide-react";
 import type { PaymentSettings, Restaurant } from "@/lib/types";
@@ -162,28 +164,61 @@ export default function CheckoutPage() {
         receiptUrl = publicUrl;
       }
 
-      const { data: order, error: orderError } = await supabase
+      const orderPayload: Record<string, unknown> = {
+        customer_id: user.id,
+        restaurant_id: restaurant.id,
+        order_type: orderType,
+        status: "placed",
+        subtotal: subtotal(),
+        delivery_fee: deliveryFee,
+        total,
+        delivery_address:
+          orderType === "delivery" ? deliveryAddress : restaurant.address,
+        delivery_lat: orderType === "delivery" ? lat : restaurant.lat,
+        delivery_lng: orderType === "delivery" ? lng : restaurant.lng,
+        customer_notes: notes || null,
+        whatsapp: whatsappClean,
+        payment_receipt_url: receiptUrl,
+      };
+
+      let { data: order, error: orderError } = await supabase
         .from("orders")
-        .insert({
-          customer_id: user.id,
-          restaurant_id: restaurant.id,
-          order_type: orderType,
-          status: "placed",
-          subtotal: subtotal(),
-          delivery_fee: deliveryFee,
-          total,
-          delivery_address:
-            orderType === "delivery" ? deliveryAddress : restaurant.address,
-          delivery_lat: orderType === "delivery" ? lat : restaurant.lat,
-          delivery_lng: orderType === "delivery" ? lng : restaurant.lng,
-          customer_notes: notes || null,
-          whatsapp: whatsappClean,
-          payment_receipt_url: receiptUrl,
-        })
+        .insert(orderPayload)
         .select()
         .single();
 
+      // Older DBs may be missing whatsapp / payment_receipt_url — retry without them
+      if (
+        orderError &&
+        (isMissingColumnError(orderError, "whatsapp") ||
+          isMissingColumnError(orderError, "payment_receipt_url"))
+      ) {
+        const {
+          whatsapp: _w,
+          payment_receipt_url: _r,
+          ...basePayload
+        } = orderPayload;
+        const noteParts = [
+          typeof basePayload.customer_notes === "string"
+            ? basePayload.customer_notes
+            : "",
+          `WhatsApp: ${whatsappClean}`,
+          "Comprobante adjunto (pendiente de migración de columnas)",
+        ].filter(Boolean);
+        const retry = await supabase
+          .from("orders")
+          .insert({
+            ...basePayload,
+            customer_notes: noteParts.join(" | "),
+          })
+          .select()
+          .single();
+        order = retry.data;
+        orderError = retry.error;
+      }
+
       if (orderError) throw orderError;
+      if (!order) throw new Error("No se creó el pedido");
 
       const orderItems = items.map((i) => ({
         order_id: order.id,
@@ -209,9 +244,8 @@ export default function CheckoutPage() {
       clearCart();
       router.push(`/orders/${order.id}`);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "No se pudo hacer el pedido"
-      );
+      console.error("Checkout error:", err);
+      setError(formatCheckoutError(err));
       setLoading(false);
     }
   };
