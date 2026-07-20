@@ -2,12 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const LOGO_ASPECT = 370 / 148;
+/** Intrinsic dimensions of public/logo.png */
+const LOGO_WIDTH = 400;
+const LOGO_HEIGHT = 175;
 
-const SIZES = {
-  xs: 20,
-  sm: 26,
-  md: 32,
+const HEIGHTS = {
+  xs: 22,
+  sm: 32,
+  md: 40,
 } as const;
 
 export function AppLogo({
@@ -16,21 +18,21 @@ export function AppLogo({
   linked = true,
 }: {
   className?: string;
-  size?: keyof typeof SIZES;
+  size?: keyof typeof HEIGHTS;
   linked?: boolean;
 }) {
-  const height = SIZES[size];
-  const width = Math.round(height * LOGO_ASPECT);
+  const height = HEIGHTS[size];
 
   const image = (
     <Image
       src="/logo.png"
       alt="MagdaYa"
-      width={width}
-      height={height}
-      className="object-contain"
-      style={{ width, height }}
+      width={LOGO_WIDTH}
+      height={LOGO_HEIGHT}
+      className="w-auto object-contain"
+      style={{ height }}
       priority
+      unoptimized
     />
   );
 
@@ -60,7 +62,7 @@ export function MobileLogoBar({
   return (
     <div
       className={cn(
-        "md:hidden px-4 pt-2.5 pb-2 bg-white safe-top border-b border-border",
+        "md:hidden px-4 pt-3 pb-2.5 bg-white safe-top border-b border-border",
         sticky && "sticky top-0 z-40",
         className
       )}
