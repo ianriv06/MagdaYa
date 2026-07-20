@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { Bike, Package, Navigation } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Package, Navigation } from "lucide-react";
 import type { Driver } from "@/lib/types";
 
 const nav = [
@@ -92,7 +93,13 @@ export function DriverLayout({
   );
 }
 
-export function DriverAvailabilityToggle({ driver }: { driver: Driver }) {
+export function DriverAvailabilityToggle({
+  driver,
+  onAvailabilityChange,
+}: {
+  driver: Driver;
+  onAvailabilityChange?: () => void | Promise<void>;
+}) {
   const [available, setAvailable] = useState(driver.is_available);
   const supabase = createClient();
 
@@ -103,19 +110,41 @@ export function DriverAvailabilityToggle({ driver }: { driver: Driver }) {
       .from("drivers")
       .update({ is_available: next })
       .eq("id", driver.id);
+
+    if (next) {
+      await supabase.rpc("refresh_delivery_offers");
+      await onAvailabilityChange?.();
+    }
   };
 
   return (
-    <button
-      onClick={toggle}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${
-        available
-          ? "bg-brand-light text-brand-dark"
-          : "bg-canvas text-muted border border-border"
-      }`}
-    >
-      <Bike className="size-3.5" />
-      {available ? "En línea" : "Desconectado"}
-    </button>
+    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+      <span
+        className={cn(
+          "text-xs font-semibold min-w-[5.5rem] text-right",
+          available ? "text-brand-dark" : "text-muted"
+        )}
+      >
+        {available ? "En línea" : "Desconectado"}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={available}
+        aria-label={available ? "En línea" : "Desconectado"}
+        onClick={toggle}
+        className={cn(
+          "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors",
+          available ? "bg-brand" : "bg-border"
+        )}
+      >
+        <span
+          className={cn(
+            "inline-block size-5 rounded-full bg-white shadow-sm transition-transform",
+            available ? "translate-x-6" : "translate-x-1"
+          )}
+        />
+      </button>
+    </label>
   );
 }

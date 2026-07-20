@@ -1,22 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   DriverLayout,
   DriverAvailabilityToggle,
 } from "@/components/driver/driver-layout";
+import { OrderRequestPopup } from "@/components/driver/order-request-popup";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
-  declineOrderForDriver,
   DRIVER_CLIENT_LOCATION_LABEL,
   formatCurrency,
-  getDeclinedOrderIds,
   getDriverEarnings,
 } from "@/lib/utils";
 import type { Driver, Order } from "@/lib/types";
 import { MapPin, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+function isMissingOfferSupport(err: unknown) {
+  const msg =
+    err && typeof err === "object" && "message" in err
+      ? String((err as { message?: string }).message)
+      : String(err ?? "");
+  return /offered_driver_id|offer_expires_at|declined_driver_ids|assign_delivery_offer|reject_delivery_offer|accept_delivery_offer|refresh_delivery_offers|schema cache|Could not find the function/i.test(
+    msg
+  );
+}
 
 export default function DriverAvailablePage() {
   return (
@@ -29,10 +38,51 @@ export default function DriverAvailablePage() {
 function AvailableList({ driver }: { driver: Driver }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [popupOrder, setPopupOrder] = useState<Order | null>(null);
+  const [offerMode, setOfferMode] = useState(true);
   const supabase = createClient();
   const router = useRouter();
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    let useOffers = offerMode;
+
+    if (useOffers) {
+      const refresh = await supabase.rpc("refresh_delivery_offers");
+      if (refresh.error && isMissingOfferSupport(refresh.error)) {
+        useOffers = false;
+        setOfferMode(false);
+      }
+    }
+
+    if (useOffers) {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, restaurants(*), order_items(*)")
+        .eq("status", "in_progress")
+        .eq("order_type", "delivery")
+        .eq("offered_driver_id", driver.id)
+        .is("driver_id", null)
+        .order("created_at", { ascending: true });
+
+      if (error && isMissingOfferSupport(error)) {
+        useOffers = false;
+        setOfferMode(false);
+      } else if (!error) {
+        const offered = data || [];
+        setOrders(offered);
+        setPopupOrder((current) => {
+          if (!driver.is_available) return null;
+          if (current && offered.some((o) => o.id === current.id)) return current;
+          return offered[0] ?? null;
+        });
+        return;
+      } else {
+        useOffers = false;
+        setOfferMode(false);
+      }
+    }
+
+    // Legacy fallback: all drivers see unassigned delivery orders
     const { data } = await supabase
       .from("orders")
       .select("*, restaurants(*), order_items(*)")
@@ -40,44 +90,89 @@ function AvailableList({ driver }: { driver: Driver }) {
       .eq("order_type", "delivery")
       .is("driver_id", null)
       .order("created_at", { ascending: true });
-    const declined = new Set(getDeclinedOrderIds(driver.id));
-    setOrders((data || []).filter((o) => !declined.has(o.id)));
-  };
+
+    const available = data || [];
+    setOrders(available);
+    setPopupOrder((current) => {
+      if (!driver.is_available) return null;
+      if (current && available.some((o) => o.id === current.id)) return current;
+      return available[0] ?? null;
+    });
+  }, [driver.id, driver.is_available, offerMode, supabase]);
 
   useEffect(() => {
     load();
     const channel = supabase
-      .channel("driver-available")
+      .channel(`driver-offers-${driver.id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders" },
         () => load()
       )
       .subscribe();
+
+    const interval = window.setInterval(() => {
+      if (driver.is_available) load();
+    }, 4000);
+
     return () => {
       supabase.removeChannel(channel);
+      window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [driver.id, driver.is_available, offerMode]);
 
   const accept = async (orderId: string) => {
     setLoadingId(orderId);
-    const { error } = await supabase
+
+    if (offerMode) {
+      const { data, error } = await supabase.rpc("accept_delivery_offer", {
+        p_order_id: orderId,
+      });
+      if (!error && data === true) {
+        setPopupOrder(null);
+        router.push("/driver/active");
+        return;
+      }
+      if (error && isMissingOfferSupport(error)) {
+        setOfferMode(false);
+      } else if (!error) {
+        setLoadingId(null);
+        await load();
+        return;
+      }
+    }
+
+    const { error: updateError } = await supabase
       .from("orders")
       .update({ driver_id: driver.id })
       .eq("id", orderId)
       .is("driver_id", null);
 
-    if (!error) {
+    if (!updateError) {
+      setPopupOrder(null);
       router.push("/driver/active");
+      return;
     }
+
     setLoadingId(null);
     await load();
   };
 
-  const decline = (orderId: string) => {
-    declineOrderForDriver(driver.id, orderId);
+  const decline = async (orderId: string) => {
+    setPopupOrder((current) => (current?.id === orderId ? null : current));
     setOrders((prev) => prev.filter((o) => o.id !== orderId));
+
+    if (offerMode) {
+      const { error } = await supabase.rpc("reject_delivery_offer", {
+        p_order_id: orderId,
+      });
+      if (error && isMissingOfferSupport(error)) {
+        setOfferMode(false);
+      }
+    }
+
+    await load();
   };
 
   return (
@@ -85,9 +180,10 @@ function AvailableList({ driver }: { driver: Driver }) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">
           {orders.length}{" "}
-          {orders.length === 1 ? "solicitud" : "solicitudes"} cerca
+          {orders.length === 1 ? "solicitud" : "solicitudes"}{" "}
+          {offerMode ? "para ti" : "cerca"}
         </p>
-        <DriverAvailabilityToggle driver={driver} />
+        <DriverAvailabilityToggle driver={driver} onAvailabilityChange={load} />
       </div>
 
       {!driver.is_available && (
@@ -96,14 +192,25 @@ function AvailableList({ driver }: { driver: Driver }) {
         </div>
       )}
 
-      {orders.length === 0 ? (
+      {driver.is_available && orders.length === 0 ? (
+        <div className="text-center py-16 text-muted">
+          <p className="font-medium">Esperando solicitudes</p>
+          <p className="text-sm mt-1">
+            Cuando haya un pedido, te llegará un aviso de 12 segundos.
+          </p>
+        </div>
+      ) : null}
+
+      {!driver.is_available && orders.length === 0 ? (
         <div className="text-center py-16 text-muted">
           <p className="font-medium">No hay solicitudes</p>
           <p className="text-sm mt-1">
             Aparecerán aquí cuando estén listas para recoger.
           </p>
         </div>
-      ) : (
+      ) : null}
+
+      {orders.length > 0 && (
         <div className="space-y-3">
           {orders.map((order) => (
             <div
@@ -122,7 +229,7 @@ function AvailableList({ driver }: { driver: Driver }) {
                   </p>
                 </div>
                 <span className="text-xs font-semibold bg-brand-light text-brand-dark px-2.5 py-1 rounded-full">
-                  Nuevo
+                  {offerMode ? "Para ti" : "Nuevo"}
                 </span>
               </div>
 
@@ -156,6 +263,15 @@ function AvailableList({ driver }: { driver: Driver }) {
             </div>
           ))}
         </div>
+      )}
+
+      {popupOrder && driver.is_available && (
+        <OrderRequestPopup
+          order={popupOrder}
+          accepting={loadingId === popupOrder.id}
+          onAccept={() => accept(popupOrder.id)}
+          onReject={() => decline(popupOrder.id)}
+        />
       )}
     </div>
   );

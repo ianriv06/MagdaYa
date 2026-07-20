@@ -83,6 +83,9 @@ export interface Order {
   customer_notes: string | null;
   whatsapp: string | null;
   payment_receipt_url: string | null;
+  offered_driver_id: string | null;
+  offer_expires_at: string | null;
+  declined_driver_ids: string[] | null;
   status_updated_at: string;
   created_at: string;
   restaurants?: Restaurant;

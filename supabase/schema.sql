@@ -108,6 +108,9 @@ CREATE TABLE orders (
   customer_notes TEXT,
   whatsapp TEXT,
   payment_receipt_url TEXT,
+  offered_driver_id UUID REFERENCES drivers(id),
+  offer_expires_at TIMESTAMPTZ,
+  declined_driver_ids UUID[] NOT NULL DEFAULT '{}',
   status_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -291,7 +294,14 @@ CREATE POLICY "Customers see own orders"
     OR get_user_role() = 'admin'
     OR EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.owner_id = auth.uid())
     OR EXISTS (SELECT 1 FROM drivers d WHERE d.id = driver_id AND d.user_id = auth.uid())
-    OR (get_user_role() = 'driver' AND status = 'in_progress' AND driver_id IS NULL AND order_type = 'delivery')
+    OR EXISTS (
+      SELECT 1 FROM drivers d
+      WHERE d.user_id = auth.uid()
+        AND d.id = offered_driver_id
+        AND status = 'in_progress'
+        AND driver_id IS NULL
+        AND order_type = 'delivery'
+    )
   );
 
 CREATE POLICY "Customers create orders"
@@ -318,7 +328,13 @@ CREATE POLICY "View order items with order access"
         OR get_user_role() = 'admin'
         OR EXISTS (SELECT 1 FROM restaurants r WHERE r.id = o.restaurant_id AND r.owner_id = auth.uid())
         OR EXISTS (SELECT 1 FROM drivers d WHERE d.id = o.driver_id AND d.user_id = auth.uid())
-        OR (get_user_role() = 'driver' AND o.status = 'in_progress')
+        OR EXISTS (
+          SELECT 1 FROM drivers d
+          WHERE d.user_id = auth.uid()
+            AND d.id = o.offered_driver_id
+            AND o.status = 'in_progress'
+            AND o.driver_id IS NULL
+        )
       )
     )
   );
