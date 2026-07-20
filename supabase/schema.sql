@@ -199,15 +199,10 @@ CREATE TRIGGER on_order_status_change
   BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
 
--- When admin confirms → pickup goes to prep; delivery stays confirmed for driver offer
+-- When admin confirms → stay at confirmed (no auto in_progress)
 CREATE OR REPLACE FUNCTION auto_in_progress_on_confirm()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.status = 'confirmed' AND OLD.status IN ('money_paid', 'placed') THEN
-    IF NEW.order_type = 'pickup' THEN
-      NEW.status = 'in_progress';
-    END IF;
-  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

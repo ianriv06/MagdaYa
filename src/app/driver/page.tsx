@@ -150,7 +150,7 @@ function AvailableList({ driver }: { driver: Driver }) {
 
     const { error: updateError } = await supabase
       .from("orders")
-      .update({ driver_id: driver.id, status: "in_progress" })
+      .update({ driver_id: driver.id })
       .eq("id", orderId)
       .is("driver_id", null);
 

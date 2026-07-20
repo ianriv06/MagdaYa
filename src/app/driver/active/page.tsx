@@ -33,7 +33,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
       .from("orders")
       .select("*, restaurants(*), order_items(*), profiles:customer_id(*)")
       .eq("driver_id", driver.id)
-      .in("status", ["in_progress", "on_the_way"])
+      .in("status", ["confirmed", "in_progress", "on_the_way"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -190,7 +190,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
           ))}
         </div>
 
-        {order.status === "in_progress" && (
+        {(order.status === "confirmed" || order.status === "in_progress") && (
           <Button
             className="w-full"
             size="lg"

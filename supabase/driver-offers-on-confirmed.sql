@@ -118,8 +118,7 @@ BEGIN
   UPDATE orders
   SET driver_id = v_driver_id,
       offered_driver_id = NULL,
-      offer_expires_at = NULL,
-      status = 'in_progress'
+      offer_expires_at = NULL
   WHERE id = p_order_id
     AND driver_id IS NULL
     AND status = 'confirmed'

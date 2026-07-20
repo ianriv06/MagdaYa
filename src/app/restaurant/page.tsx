@@ -28,6 +28,13 @@ function Overview({ restaurantId }: { restaurantId: string }) {
           .from("orders")
           .select("*, order_items(*)")
           .eq("restaurant_id", restaurantId)
+          .in("status", [
+            "confirmed",
+            "in_progress",
+            "on_the_way",
+            "delivered",
+            "cancelled",
+          ])
           .order("created_at", { ascending: false })
           .limit(5),
         supabase

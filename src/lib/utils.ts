@@ -92,9 +92,9 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   placed: "Pedido realizado",
   money_paid: "Pago recibido por el comercio",
   confirmed: "Pedido confirmado",
-  in_progress: "Pedido en preparación",
-  on_the_way: "Pedido en camino",
-  delivered: "Pedido entregado",
+  in_progress: "Pedido confirmado",
+  on_the_way: "De ida a entregar pedido",
+  delivered: "Entregado",
   cancelled: "Cancelado",
 };
 
@@ -105,19 +105,22 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Super Admin",
 };
 
-/** Customer-facing progress steps (skips legacy money_paid). */
+/** Customer-facing progress steps. */
 export const ORDER_STATUS_FLOW: OrderStatus[] = [
   "placed",
   "confirmed",
-  "in_progress",
   "on_the_way",
   "delivered",
 ];
 
 export function getStatusIndex(status: OrderStatus) {
-  // Legacy money_paid — treat as still awaiting admin confirm
+  // Legacy money_paid — still awaiting admin confirm
   if (status === "money_paid") {
     return ORDER_STATUS_FLOW.indexOf("placed");
+  }
+  // Legacy in_progress — driver accepted, food not picked up yet → still "Pedido confirmado"
+  if (status === "in_progress") {
+    return ORDER_STATUS_FLOW.indexOf("confirmed");
   }
   return ORDER_STATUS_FLOW.indexOf(status);
 }

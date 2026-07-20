@@ -63,25 +63,10 @@ function AdminOrders() {
 
     await supabase.from("orders").update({ status }).eq("id", orderId);
 
-    // Pickup: move into prep after confirm. Delivery stays confirmable for driver offers.
-    if (status === "confirmed") {
-      const { data } = await supabase
-        .from("orders")
-        .select("status, order_type")
-        .eq("id", orderId)
-        .single();
-      if (data?.status === "confirmed" && data.order_type === "pickup") {
-        await supabase
-          .from("orders")
-          .update({ status: "in_progress" })
-          .eq("id", orderId);
-      }
-
-      // Kick driver assignment right after confirm (delivery)
-      if ((before?.order_type || data?.order_type) === "delivery") {
-        await supabase.rpc("assign_delivery_offer", { p_order_id: orderId });
-        await supabase.rpc("refresh_delivery_offers");
-      }
+    // On confirm: notify drivers (delivery) — restaurants see confirmed orders via realtime
+    if (status === "confirmed" && before?.order_type === "delivery") {
+      await supabase.rpc("assign_delivery_offer", { p_order_id: orderId });
+      await supabase.rpc("refresh_delivery_offers");
     }
 
     await load();
@@ -124,7 +109,7 @@ function AdminOrders() {
           [
             "all",
             "placed",
-            "in_progress",
+            "confirmed",
             "on_the_way",
             "delivered",
           ] as const
@@ -190,8 +175,10 @@ function AdminOrders() {
 
               {order.status === "confirmed" && (
                 <p className="text-xs text-muted text-center">
-                  Pasó automáticamente a En preparación — repartidores
-                  notificados
+                  Restaurante notificado
+                  {order.order_type === "delivery"
+                    ? " · solicitud enviada a repartidores"
+                    : ""}
                 </p>
               )}
 
@@ -255,7 +242,8 @@ function AdminOrders() {
                       order.status
                     ) && (
                       <div className="flex flex-wrap gap-2">
-                        {order.status === "in_progress" &&
+                        {(order.status === "confirmed" ||
+                          order.status === "in_progress") &&
                           order.order_type === "pickup" && (
                             <Button
                               size="sm"

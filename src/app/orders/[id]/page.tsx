@@ -107,7 +107,9 @@ export default function OrderTrackingPage() {
   if (
     order.drivers?.current_lat != null &&
     order.drivers?.current_lng != null &&
-    (order.status === "on_the_way" || order.status === "in_progress")
+    (order.status === "on_the_way" ||
+      order.status === "in_progress" ||
+      (order.status === "confirmed" && order.driver_id))
   ) {
     markers.push({
       id: "driver",
