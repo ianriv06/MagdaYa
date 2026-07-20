@@ -9,12 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import type { DeliveryEtaRange, Restaurant } from "@/lib/types";
 import {
   DELIVERY_ETA_OPTIONS,
+  deliveryEtaToMinutes,
   normalizeDeliveryEtaRange,
 } from "@/lib/utils";
 import {
   fileToCompressedDataUrl,
   formatCheckoutError,
   isBucketNotFoundError,
+  isMissingColumnError,
 } from "@/lib/receipt-upload";
 import { Upload } from "lucide-react";
 
@@ -77,6 +79,7 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
         cuisine,
         address,
         delivery_eta_range: deliveryEta,
+        eta_minutes: deliveryEtaToMinutes(deliveryEta),
         is_open: isOpen,
       };
 
@@ -95,10 +98,20 @@ function SettingsForm({ restaurant }: { restaurant: Restaurant }) {
         payload.image_url = null;
       }
 
-      const { error: saveError } = await supabase
+      let { error: saveError } = await supabase
         .from("restaurants")
         .update(payload)
         .eq("id", restaurant.id);
+
+      // Older DBs may not have delivery_eta_range — retry with eta_minutes only
+      if (saveError && isMissingColumnError(saveError, "delivery_eta_range")) {
+        const { delivery_eta_range: _range, ...withoutRange } = payload;
+        const retry = await supabase
+          .from("restaurants")
+          .update(withoutRange)
+          .eq("id", restaurant.id);
+        saveError = retry.error;
+      }
 
       if (saveError) throw saveError;
 

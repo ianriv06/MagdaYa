@@ -117,25 +117,48 @@ function SetupRestaurant({
     setLoading(true);
     setError("");
 
-    const { data, error: err } = await supabase
+    const payload = {
+      owner_id: user.id,
+      name,
+      address,
+      cuisine,
+      description,
+      delivery_eta_range: DEFAULT_DELIVERY_ETA,
+      eta_minutes: 25,
+      lat: 40.7128 + Math.random() * 0.05,
+      lng: -74.006 + Math.random() * 0.05,
+      image_url: `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80`,
+      cover_url: `https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80`,
+    };
+
+    let { data, error: err } = await supabase
       .from("restaurants")
-      .insert({
-        owner_id: user.id,
-        name,
-        address,
-        cuisine,
-        description,
-        delivery_eta_range: DEFAULT_DELIVERY_ETA,
-        lat: 40.7128 + Math.random() * 0.05,
-        lng: -74.006 + Math.random() * 0.05,
-        image_url: `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80`,
-        cover_url: `https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80`,
-      })
+      .insert(payload)
       .select()
       .single();
 
+    if (
+      err &&
+      typeof err.message === "string" &&
+      err.message.toLowerCase().includes("delivery_eta_range")
+    ) {
+      const { delivery_eta_range: _r, ...withoutRange } = payload;
+      const retry = await supabase
+        .from("restaurants")
+        .insert(withoutRange)
+        .select()
+        .single();
+      data = retry.data;
+      err = retry.error;
+    }
+
     if (err) {
       setError(err.message);
+      setLoading(false);
+      return;
+    }
+    if (!data) {
+      setError("No se pudo crear el restaurante");
       setLoading(false);
       return;
     }

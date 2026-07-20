@@ -62,6 +62,18 @@ export function normalizeDeliveryEtaRange(
   return DEFAULT_DELIVERY_ETA;
 }
 
+/** Representative minutes for a range (used when delivery_eta_range column is missing). */
+export function deliveryEtaToMinutes(range: DeliveryEtaRange): number {
+  switch (range) {
+    case "30-60":
+      return 45;
+    case "60+":
+      return 75;
+    default:
+      return 25;
+  }
+}
+
 export function formatDeliveryEta(
   range: string | null | undefined,
   etaMinutes?: number | null
