@@ -2,10 +2,14 @@
 export function toWhatsAppNumber(phone: string): string {
   let digits = phone.replace(/\D/g, "");
   if (!digits) return "";
-  // Local 8-digit mobile → add Bolivia country code
-  if (digits.length === 8) digits = `591${digits}`;
   // Strip leading 00
   if (digits.startsWith("00")) digits = digits.slice(2);
+  // Local 8-digit mobile → add Bolivia country code
+  if (digits.length === 8) digits = `591${digits}`;
+  // 9 digits starting with 0 → drop leading 0 then add 591
+  if (digits.length === 9 && digits.startsWith("0")) {
+    digits = `591${digits.slice(1)}`;
+  }
   return digits;
 }
 
@@ -15,6 +19,13 @@ export type OrderWhatsAppPayload = {
   restaurantName: string;
   totalLabel: string;
   orderType: "delivery" | "pickup";
+};
+
+export type WhatsAppSendResult = {
+  ok: boolean;
+  skipped?: boolean;
+  error?: string;
+  code?: number;
 };
 
 function buildConfirmationText(p: OrderWhatsAppPayload) {
@@ -32,68 +43,19 @@ function buildConfirmationText(p: OrderWhatsAppPayload) {
   ].join("\n");
 }
 
-/**
- * Send order confirmation via WhatsApp Cloud API (Meta).
- * Requires env:
- *   WHATSAPP_TOKEN
- *   WHATSAPP_PHONE_NUMBER_ID
- * Optional:
- *   WHATSAPP_TEMPLATE_NAME  — if set, sends an approved template instead of free text
- *   WHATSAPP_TEMPLATE_LANG  — default "es"
- */
-export async function sendOrderWhatsAppConfirmation(
-  payload: OrderWhatsAppPayload
-): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
-  const token = process.env.WHATSAPP_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+type GraphError = {
+  message?: string;
+  type?: string;
+  code?: number;
+  error_subcode?: number;
+  error_data?: { details?: string };
+};
 
-  if (!token || !phoneNumberId) {
-    return {
-      ok: false,
-      skipped: true,
-      error:
-        "WhatsApp no configurado (falta WHATSAPP_TOKEN o WHATSAPP_PHONE_NUMBER_ID)",
-    };
-  }
-
-  const to = toWhatsAppNumber(payload.phone);
-  if (to.length < 10) {
-    return { ok: false, error: "Número de WhatsApp inválido" };
-  }
-
-  const templateName = process.env.WHATSAPP_TEMPLATE_NAME?.trim();
-  const templateLang = process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "es";
-
-  const body = templateName
-    ? {
-        messaging_product: "whatsapp",
-        to,
-        type: "template",
-        template: {
-          name: templateName,
-          language: { code: templateLang },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                { type: "text", text: payload.orderId.slice(0, 8).toUpperCase() },
-                { type: "text", text: payload.restaurantName },
-                { type: "text", text: payload.totalLabel },
-              ],
-            },
-          ],
-        },
-      }
-    : {
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: {
-          preview_url: false,
-          body: buildConfirmationText(payload),
-        },
-      };
-
+async function postWhatsAppMessage(
+  phoneNumberId: string,
+  token: string,
+  body: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string; code?: number; raw?: unknown }> {
   const res = await fetch(
     `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
     {
@@ -107,16 +69,142 @@ export async function sendOrderWhatsAppConfirmation(
   );
 
   const data = (await res.json().catch(() => ({}))) as {
-    error?: { message?: string };
+    error?: GraphError;
     messages?: unknown[];
   };
 
-  if (!res.ok) {
+  if (!res.ok || data.error) {
+    const err = data.error || {};
+    const details = err.error_data?.details;
+    const message = [err.message, details].filter(Boolean).join(" — ");
     return {
       ok: false,
-      error: data.error?.message || `WhatsApp API error ${res.status}`,
+      error: message || `WhatsApp API error ${res.status}`,
+      code: err.code,
+      raw: data,
     };
   }
 
-  return { ok: true };
+  return { ok: true, raw: data };
+}
+
+/**
+ * Send order confirmation via WhatsApp Cloud API (Meta).
+ *
+ * Env:
+ *   WHATSAPP_TOKEN
+ *   WHATSAPP_PHONE_NUMBER_ID
+ * Optional:
+ *   WHATSAPP_TEMPLATE_NAME — approved template (recommended for production)
+ *   WHATSAPP_TEMPLATE_LANG — default "es"
+ */
+export async function sendOrderWhatsAppConfirmation(
+  payload: OrderWhatsAppPayload
+): Promise<WhatsAppSendResult> {
+  const token = process.env.WHATSAPP_TOKEN?.trim();
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+
+  if (!token || !phoneNumberId) {
+    return {
+      ok: false,
+      skipped: true,
+      error:
+        "WhatsApp no configurado (falta WHATSAPP_TOKEN o WHATSAPP_PHONE_NUMBER_ID)",
+    };
+  }
+
+  const to = toWhatsAppNumber(payload.phone);
+  if (to.length < 10) {
+    return { ok: false, error: `Número de WhatsApp inválido: ${payload.phone}` };
+  }
+
+  const templateName = process.env.WHATSAPP_TEMPLATE_NAME?.trim();
+  const templateLang = process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "es";
+
+  // Preferred: approved template (works outside the 24h window)
+  if (templateName) {
+    const templated = await postWhatsAppMessage(phoneNumberId, token, {
+      messaging_product: "whatsapp",
+      to,
+      type: "template",
+      template: {
+        name: templateName,
+        language: { code: templateLang },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: payload.orderId.slice(0, 8).toUpperCase(),
+              },
+              { type: "text", text: payload.restaurantName },
+              { type: "text", text: payload.totalLabel },
+            ],
+          },
+        ],
+      },
+    });
+    if (templated.ok) return { ok: true };
+    // Fall through to free text / hello_world if template fails
+    console.error("WhatsApp template failed:", templated.error, templated.code);
+  }
+
+  // Free-form text (only works for test recipients / open customer-care window)
+  const textResult = await postWhatsAppMessage(phoneNumberId, token, {
+    messaging_product: "whatsapp",
+    to,
+    type: "text",
+    text: {
+      preview_url: false,
+      body: buildConfirmationText(payload),
+    },
+  });
+
+  if (textResult.ok) return { ok: true };
+
+  console.error("WhatsApp text failed:", textResult.error, textResult.code);
+
+  // Auth failure — token expired / invalid
+  if (textResult.code === 190) {
+    return {
+      ok: false,
+      code: 190,
+      error:
+        "Token de WhatsApp inválido o expirado. Genera uno nuevo en Meta → WhatsApp → API Setup.",
+    };
+  }
+
+  // Recipient not allowed (dev mode) — common when number isn't added as test recipient
+  if (textResult.code === 131030 || textResult.code === 133010) {
+    return {
+      ok: false,
+      code: textResult.code,
+      error:
+        "Tu número no está en la lista de prueba de Meta. Agrégalo en WhatsApp → API Setup → To.",
+    };
+  }
+
+  // Fallback: Meta's default hello_world template (works for added test numbers)
+  const hello = await postWhatsAppMessage(phoneNumberId, token, {
+    messaging_product: "whatsapp",
+    to,
+    type: "template",
+    template: {
+      name: "hello_world",
+      language: { code: "en_US" },
+    },
+  });
+
+  if (hello.ok) {
+    return { ok: true };
+  }
+
+  console.error("WhatsApp hello_world failed:", hello.error, hello.code);
+
+  return {
+    ok: false,
+    code: hello.code ?? textResult.code,
+    error: hello.error || textResult.error || "No se pudo enviar WhatsApp",
+  };
 }

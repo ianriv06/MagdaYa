@@ -26,6 +26,10 @@ export async function POST(req: Request) {
       orderType,
     });
 
+    if (!result.ok) {
+      console.error("[notify-order]", result);
+    }
+
     return NextResponse.json(result, {
       status: result.ok || result.skipped ? 200 : 502,
     });

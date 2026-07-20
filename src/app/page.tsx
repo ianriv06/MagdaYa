@@ -49,7 +49,7 @@ export default function HomePage() {
         <div className="px-4 pt-3 pb-3 space-y-3">
           {/* Delivery / Pickup segmented control */}
           <div className="flex justify-center">
-            <div className="inline-flex p-1 rounded-full bg-subtle">
+            <div className="inline-flex p-1.5 rounded-full bg-subtle">
               {(
                 [
                   { id: "delivery", label: "Domicilio" },
@@ -61,7 +61,7 @@ export default function HomePage() {
                   type="button"
                   onClick={() => setOrderType(id)}
                   className={cn(
-                    "h-8 px-4 rounded-full text-[13px] font-bold transition-colors",
+                    "h-[37px] px-[18px] rounded-full text-[15px] font-bold transition-colors",
                     orderType === id
                       ? "bg-brand text-white"
                       : "text-ink/70"
@@ -112,7 +112,7 @@ export default function HomePage() {
               type="button"
               onClick={() => setOrderType(id)}
               className={cn(
-                "h-9 px-4 rounded-full text-sm font-bold transition-colors",
+                "h-[41px] px-[18px] rounded-full text-[16px] font-bold transition-colors",
                 orderType === id ? "bg-brand text-white" : "bg-subtle text-ink"
               )}
             >
@@ -132,25 +132,32 @@ export default function HomePage() {
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 pt-4 md:pt-6 pb-4">
-        <h2 className="text-[18px] font-bold tracking-tight mb-3">
-          {query ? "Resultados" : "Restaurantes cerca"}
-        </h2>
+      <main className="pt-4 md:pt-6 pb-4">
+        <div className="max-w-6xl mx-auto px-4 mb-3">
+          <h2 className="text-[18px] font-bold tracking-tight">
+            {query ? "Resultados" : "Restaurantes cerca"}
+          </h2>
+        </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div>
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-[16/9] rounded-xl bg-subtle" />
-                <div className="pt-2.5 space-y-2">
-                  <div className="h-4 bg-subtle rounded w-2/3" />
-                  <div className="h-3 bg-subtle rounded w-1/3" />
+              <div
+                key={i}
+                className={cn("w-full", i % 2 === 0 && "bg-brand-light")}
+              >
+                <div className="max-w-6xl mx-auto px-4 py-4 animate-pulse">
+                  <div className="aspect-[16/9] rounded-xl bg-subtle" />
+                  <div className="pt-2.5 space-y-2">
+                    <div className="h-4 bg-subtle rounded w-2/3" />
+                    <div className="h-3 bg-subtle rounded w-1/3" />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-muted">
+          <div className="max-w-6xl mx-auto px-4 text-center py-20 text-muted">
             <p className="font-semibold text-ink">No se encontraron restaurantes</p>
             <p className="text-sm mt-1">
               {restaurants.length === 0
@@ -159,14 +166,19 @@ export default function HomePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div>
             {filtered.map((r, i) => (
               <div
                 key={r.id}
                 style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
-                className="animate-slide-up"
+                className={cn(
+                  "w-full animate-slide-up",
+                  i % 2 === 0 && "bg-brand-light"
+                )}
               >
-                <RestaurantCard restaurant={r} />
+                <div className="max-w-6xl mx-auto px-4 py-4">
+                  <RestaurantCard restaurant={r} />
+                </div>
               </div>
             ))}
           </div>

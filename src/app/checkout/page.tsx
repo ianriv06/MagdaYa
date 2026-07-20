@@ -193,20 +193,26 @@ export default function CheckoutPage() {
         note: "Pedido realizado, esperando confirmación",
       });
 
-      // Fire-and-forget WhatsApp confirmation (requires WhatsApp Cloud API env vars)
-      void fetch("/api/notify-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: whatsappClean,
-          orderId: order.id,
-          restaurantName: restaurant.name,
-          totalLabel: formatCurrency(total),
-          orderType,
-        }),
-      }).catch(() => {
-        /* non-blocking */
-      });
+      // Await WhatsApp so we can log failures (order still succeeds either way)
+      try {
+        const notifyRes = await fetch("/api/notify-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: whatsappClean,
+            orderId: order.id,
+            restaurantName: restaurant.name,
+            totalLabel: formatCurrency(total),
+            orderType,
+          }),
+        });
+        const notifyJson = await notifyRes.json().catch(() => null);
+        if (!notifyRes.ok || (notifyJson && notifyJson.ok === false)) {
+          console.error("WhatsApp notify failed:", notifyJson);
+        }
+      } catch (notifyErr) {
+        console.error("WhatsApp notify error:", notifyErr);
+      }
 
       clearCart();
       router.push(`/orders/${order.id}`);
