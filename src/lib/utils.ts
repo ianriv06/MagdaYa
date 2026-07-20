@@ -93,7 +93,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   money_paid: "Pago recibido por el comercio",
   confirmed: "Pedido confirmado",
   in_progress: "Pedido confirmado",
-  on_the_way: "De ida a entregar pedido",
+  on_the_way: "En camino hacia ti",
   delivered: "Entregado",
   cancelled: "Cancelado",
 };
