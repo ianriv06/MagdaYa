@@ -134,3 +134,35 @@ export function getDashboardPath(role: string) {
       return "/";
   }
 }
+
+/** Shown to drivers for delivery orders until the client shares their location. */
+export const DRIVER_CLIENT_LOCATION_LABEL =
+  "Pedir ubicación al cliente por WhatsApp";
+
+export function getDriverEarnings(order: { delivery_fee?: number | null }) {
+  const fee = Number(order.delivery_fee);
+  return Number.isFinite(fee) && fee > 0 ? fee : DELIVERY_FEE;
+}
+
+const declinedOrdersKey = (driverId: string) =>
+  `magdaya-driver-declined:${driverId}`;
+
+export function getDeclinedOrderIds(driverId: string): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(declinedOrdersKey(driverId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function declineOrderForDriver(driverId: string, orderId: string) {
+  const ids = new Set(getDeclinedOrderIds(driverId));
+  ids.add(orderId);
+  localStorage.setItem(
+    declinedOrdersKey(driverId),
+    JSON.stringify([...ids])
+  );
+}

@@ -7,7 +7,13 @@ import {
 } from "@/components/driver/driver-layout";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
+import {
+  declineOrderForDriver,
+  DRIVER_CLIENT_LOCATION_LABEL,
+  formatCurrency,
+  getDeclinedOrderIds,
+  getDriverEarnings,
+} from "@/lib/utils";
 import type { Driver, Order } from "@/lib/types";
 import { MapPin, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -34,7 +40,8 @@ function AvailableList({ driver }: { driver: Driver }) {
       .eq("order_type", "delivery")
       .is("driver_id", null)
       .order("created_at", { ascending: true });
-    setOrders(data || []);
+    const declined = new Set(getDeclinedOrderIds(driver.id));
+    setOrders((data || []).filter((o) => !declined.has(o.id)));
   };
 
   useEffect(() => {
@@ -69,7 +76,8 @@ function AvailableList({ driver }: { driver: Driver }) {
   };
 
   const decline = (orderId: string) => {
-    setOrders(orders.filter((o) => o.id !== orderId));
+    declineOrderForDriver(driver.id, orderId);
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
   };
 
   return (
@@ -108,7 +116,7 @@ function AvailableList({ driver }: { driver: Driver }) {
                     {order.restaurants?.name}
                   </h3>
                   <p className="text-sm text-muted">
-                    {formatCurrency(order.total)} ·{" "}
+                    {formatCurrency(getDriverEarnings(order))} ·{" "}
                     {order.order_items?.reduce((s, i) => s + i.quantity, 0)}{" "}
                     productos
                   </p>
@@ -125,7 +133,7 @@ function AvailableList({ driver }: { driver: Driver }) {
                 </div>
                 <div className="flex items-start gap-2">
                   <MapPin className="size-4 text-info mt-0.5 shrink-0" />
-                  <span>{order.delivery_address}</span>
+                  <span>{DRIVER_CLIENT_LOCATION_LABEL}</span>
                 </div>
               </div>
 

@@ -6,7 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { OrderMap, type MapMarker } from "@/components/map/order-map";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatCurrency } from "@/lib/utils";
+import {
+  DRIVER_CLIENT_LOCATION_LABEL,
+  formatCurrency,
+  getDriverEarnings,
+} from "@/lib/utils";
 import type { Driver, Order } from "@/lib/types";
 import { CheckCircle2, Package } from "lucide-react";
 
@@ -139,7 +143,8 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
               {order.restaurants?.name}
             </h2>
             <p className="text-sm text-muted">
-              {order.profiles?.full_name} · {formatCurrency(order.total)}
+              {order.profiles?.full_name} ·{" "}
+              {formatCurrency(getDriverEarnings(order))}
             </p>
           </div>
           <StatusBadge status={order.status} />
@@ -156,7 +161,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
             <p className="text-xs font-semibold text-muted uppercase tracking-wide">
               Entregar
             </p>
-            <p className="font-medium">{order.delivery_address}</p>
+            <p className="font-medium">{DRIVER_CLIENT_LOCATION_LABEL}</p>
           </div>
           {order.whatsapp && (
             <div>
