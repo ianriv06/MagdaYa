@@ -11,7 +11,6 @@ import { formatCurrency } from "@/lib/utils";
 import type { Order } from "@/lib/types";
 import { ArrowLeft, Bike, Store, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppLogo } from "@/components/layout/app-logo";
 
 export default function OrderTrackingPage() {
   const { id } = useParams<{ id: string }>();
@@ -119,9 +118,8 @@ export default function OrderTrackingPage() {
 
   return (
     <div className="min-h-dvh bg-canvas pb-8">
-      <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center gap-2 safe-top">
-        <AppLogo size="xs" />
-        <button onClick={() => router.push("/orders")} className="p-1 -ml-1">
+      <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center gap-3">
+        <button onClick={() => router.push("/orders")} className="p-1">
           <ArrowLeft className="size-5" />
         </button>
         <div className="flex-1 min-w-0">

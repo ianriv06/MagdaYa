@@ -14,7 +14,6 @@ import {
   phoneToAuthEmail,
 } from "@/lib/utils";
 import type { UserRole } from "@/lib/types";
-import { AppLogo } from "@/components/layout/app-logo";
 import { Bike, ChefHat, ShoppingBag, Shield, ArrowLeft } from "lucide-react";
 
 const ROLES: {
@@ -183,12 +182,12 @@ export default function AuthPage() {
   if (mode === "select") {
     return (
       <div className="min-h-dvh bg-white">
-        <div className="sticky top-0 z-10 bg-white safe-top px-4 pt-3 pb-2 border-b border-border">
-          <AppLogo size="sm" />
-        </div>
-        <div className="max-w-md mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto px-4 py-10">
           <div className="text-center mb-8 animate-fade-in">
-            <p className="text-muted text-[15px]">
+            <h1 className="font-display text-[32px] font-bold tracking-tight">
+              Magda<span className="text-brand">Ya</span>
+            </h1>
+            <p className="text-muted mt-1.5 text-[15px]">
               Comida a domicilio y para recoger
             </p>
           </div>
@@ -253,10 +252,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-dvh bg-canvas">
-      <div className="sticky top-0 z-10 bg-canvas safe-top px-4 pt-3 pb-2 border-b border-border">
-        <AppLogo size="sm" />
-      </div>
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="max-w-md mx-auto px-4 py-8">
         <button
           onClick={() => setMode("select")}
           className="flex items-center gap-1.5 text-sm text-muted hover:text-ink mb-6"

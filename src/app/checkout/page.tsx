@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useCart } from "@/store/cart";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
-import { AppLogo } from "@/components/layout/app-logo";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency, DELIVERY_FEE, PLATFORM_FEE } from "@/lib/utils";
@@ -226,8 +225,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-dvh bg-white">
-      <header className="sticky top-0 z-30 bg-white border-b border-border px-4 h-14 flex items-center gap-3 safe-top">
-        <AppLogo size="sm" />
+      <header className="sticky top-0 z-30 bg-white border-b border-border px-4 h-14 flex items-center">
         <h1 className="text-lg font-bold">Pagar</h1>
       </header>
 
