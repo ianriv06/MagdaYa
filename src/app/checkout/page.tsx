@@ -16,15 +16,16 @@ import {
   isBucketNotFoundError,
   isMissingColumnError,
 } from "@/lib/receipt-upload";
-import { QrCode, MapPin, CheckCircle2, MessageCircle, Upload } from "lucide-react";
+import { QrCode, MapPin, CheckCircle2, MessageCircle, Upload, AlertTriangle } from "lucide-react";
 import type { PaymentSettings, Restaurant } from "@/lib/types";
+
+const DELIVERY_ADDRESS_PENDING =
+  "Pendiente — el repartidor pedirá la ubicación por WhatsApp";
 
 export default function CheckoutPage() {
   const {
     items,
     orderType,
-    deliveryAddress,
-    setDeliveryAddress,
     notes,
     setNotes,
     whatsapp,
@@ -32,8 +33,6 @@ export default function CheckoutPage() {
     subtotal,
     clearCart,
     itemCount,
-    deliveryLat,
-    deliveryLng,
   } = useCart();
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -45,7 +44,6 @@ export default function CheckoutPage() {
   const [receiptPreview, setReceiptPreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [locating, setLocating] = useState(false);
 
   const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
   const total = subtotal() + deliveryFee;
@@ -80,49 +78,8 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.phone]);
 
-  const useMyLocation = () => {
-    if (!navigator.geolocation) {
-      setError("La geolocalización no está disponible");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          );
-          const data = await res.json();
-          setDeliveryAddress(
-            data.display_name ||
-              `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
-            latitude,
-            longitude
-          );
-        } catch {
-          setDeliveryAddress(
-            `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
-            latitude,
-            longitude
-          );
-        }
-        setLocating(false);
-      },
-      () => {
-        setError("No pudimos obtener tu ubicación");
-        setLocating(false);
-      },
-      { enableHighAccuracy: true }
-    );
-  };
-
   const placeOrder = async () => {
     if (!user || !restaurant) return;
-    if (orderType === "delivery" && !deliveryAddress.trim()) {
-      setError("Ingresa una dirección de entrega");
-      return;
-    }
     const whatsappClean = whatsapp.trim();
     if (!whatsappClean) {
       setError("Ingresa tu número de WhatsApp para esta orden");
@@ -137,14 +94,6 @@ export default function CheckoutPage() {
     setError("");
 
     try {
-      let lat = deliveryLat;
-      let lng = deliveryLng;
-
-      if (orderType === "delivery" && (lat == null || lng == null)) {
-        lat = restaurant.lat + 0.008;
-        lng = restaurant.lng + 0.008;
-      }
-
       const ext = receiptFile.name.split(".").pop() || "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
       let receiptUrl: string;
@@ -173,9 +122,11 @@ export default function CheckoutPage() {
         delivery_fee: deliveryFee,
         total,
         delivery_address:
-          orderType === "delivery" ? deliveryAddress : restaurant.address,
-        delivery_lat: orderType === "delivery" ? lat : restaurant.lat,
-        delivery_lng: orderType === "delivery" ? lng : restaurant.lng,
+          orderType === "delivery"
+            ? DELIVERY_ADDRESS_PENDING
+            : restaurant.address,
+        delivery_lat: orderType === "delivery" ? null : restaurant.lat,
+        delivery_lng: orderType === "delivery" ? null : restaurant.lng,
         customer_notes: notes || null,
         whatsapp: whatsappClean,
         payment_receipt_url: receiptUrl,
@@ -258,25 +209,23 @@ export default function CheckoutPage() {
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-slide-up">
         {orderType === "delivery" && (
-          <section className="space-y-3">
-            <h2 className="font-bold text-[15px] flex items-center gap-2">
-              <MapPin className="size-4 text-brand" /> Dirección de entrega
-            </h2>
-            <Input
-              id="address"
-              placeholder="Ingresa tu dirección"
-              value={deliveryAddress}
-              onChange={(e) => setDeliveryAddress(e.target.value)}
+          <section
+            className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 flex gap-3"
+            role="status"
+          >
+            <AlertTriangle
+              className="size-5 text-amber-600 shrink-0 mt-0.5"
+              aria-hidden
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={useMyLocation}
-              loading={locating}
-              type="button"
-            >
-              Usar mi ubicación
-            </Button>
+            <div className="space-y-1 min-w-0">
+              <h2 className="font-bold text-[15px] text-amber-950 flex items-center gap-2">
+                <MapPin className="size-4" /> Ubicación de entrega
+              </h2>
+              <p className="text-sm text-amber-900/90 leading-snug">
+                Una vez que pagues tu orden y sea confirmada, tu delivery te
+                escribirá por WhatsApp para pedirte tu ubicación.
+              </p>
+            </div>
           </section>
         )}
 
@@ -296,7 +245,8 @@ export default function CheckoutPage() {
             required
           />
           <p className="text-xs text-muted">
-            El restaurante o el repartidor te escribirá por este número.
+            El restaurante o el repartidor te escribirá por este número para
+            confirmar y pedir tu ubicación.
           </p>
         </section>
 
