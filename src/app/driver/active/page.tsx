@@ -26,6 +26,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [confirmDeliver, setConfirmDeliver] = useState(false);
   const supabase = createClient();
 
   const load = async () => {
@@ -92,6 +93,7 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
       .from("orders")
       .update({ status: "delivered" })
       .eq("id", order.id);
+    setConfirmDeliver(false);
     await load();
     setUpdating(false);
   };
@@ -206,14 +208,49 @@ function ActiveDelivery({ driver }: { driver: Driver }) {
           <Button
             className="w-full"
             size="lg"
-            onClick={markDelivered}
-            loading={updating}
+            onClick={() => setConfirmDeliver(true)}
+            disabled={updating}
           >
             <CheckCircle2 className="size-5" />
             Entregado
           </Button>
         )}
       </div>
+
+      {confirmDeliver && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-deliver-title"
+        >
+          <div className="w-full max-w-sm rounded-3xl bg-surface border border-border p-5 space-y-5 shadow-lg">
+            <p
+              id="confirm-deliver-title"
+              className="font-display text-lg font-bold text-center leading-snug"
+            >
+              ¿Estás seguro/a que ya entregaste el pedido al cliente?
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setConfirmDeliver(false)}
+                disabled={updating}
+              >
+                No
+              </Button>
+              <Button
+                className="flex-1"
+                loading={updating}
+                onClick={markDelivered}
+              >
+                Sí, seguro
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
