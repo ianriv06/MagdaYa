@@ -118,18 +118,13 @@ export function DashboardShell({
                   href={item.href}
                   className={cn(
                     "flex flex-col items-center gap-0 px-1.5 min-w-[56px] transition-colors",
-                    active ? "text-brand" : "text-brand/55"
+                    "text-brand"
                   )}
                 >
-                  <span className={cn(active ? "text-brand" : "text-brand/55")}>
+                  <span className="text-brand">
                     <NavIcon icon={item.icon} filled={active} />
                   </span>
-                  <span
-                    className={cn(
-                      "text-[13px] font-medium leading-none",
-                      active ? "text-brand" : "text-brand/55"
-                    )}
-                  >
+                  <span className="text-[13px] font-medium leading-none text-brand">
                     {item.label}
                   </span>
                 </Link>

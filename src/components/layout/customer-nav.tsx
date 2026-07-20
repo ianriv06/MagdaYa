@@ -45,7 +45,7 @@ export function CustomerNav() {
               href={href}
               className={cn(
                 "relative flex flex-1 flex-col items-center justify-center gap-0 transition-colors",
-                active ? "text-brand" : "text-brand/55"
+                "text-brand"
               )}
             >
               <Icon
