@@ -63,7 +63,7 @@ export function DashboardShell({
 
   return (
     <div className="min-h-dvh bg-canvas flex flex-col md:flex-row">
-      <aside className="hidden md:flex md:w-64 md:flex-col bg-ink text-white shrink-0">
+      <aside className="desktop-only-nav hidden md:flex md:w-64 md:flex-col bg-ink text-white shrink-0">
         <div className="p-6 border-b border-white/10">
           <Link href="/" className="font-display text-xl font-bold">
             Magda<span className="text-brand">Ya</span>
@@ -103,7 +103,7 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] desktop-no-mobile-nav-pad">
         <header className="sticky top-0 z-30 bg-surface border-b border-border px-4 h-14 flex items-center justify-between md:px-8">
           <h1 className="font-display text-lg font-bold">{title}</h1>
           <button

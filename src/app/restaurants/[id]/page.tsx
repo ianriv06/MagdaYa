@@ -75,7 +75,7 @@ export default function RestaurantDetailPage() {
   const acceptingOrders = isRestaurantAcceptingOrders(restaurant);
 
   return (
-    <div className="min-h-dvh bg-white pb-[88px] md:pb-8">
+    <div className="min-h-dvh bg-white pb-[88px] desktop-no-mobile-nav-pad">
       <div className="relative h-[200px] md:h-64 bg-subtle">
         {restaurant.cover_url || restaurant.image_url ? (
           <Image

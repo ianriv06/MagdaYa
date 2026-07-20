@@ -42,11 +42,11 @@ export default function HomePage() {
     (orderType === "pickup" ? "Recoger cerca" : "Tu ubicación");
 
   return (
-    <div className="min-h-dvh bg-white pb-[72px] md:pb-0">
+    <div className="min-h-dvh bg-white pb-[72px] desktop-no-mobile-nav-pad">
       <DesktopHeader />
 
       {/* Mobile sticky header — Uber Eats style */}
-      <header className="sticky top-0 z-40 bg-white safe-top md:hidden border-b border-transparent">
+      <header className="sticky top-0 z-40 bg-white safe-top mobile-only-chrome md:hidden border-b border-transparent">
         <div className="px-4 pt-3 pb-3 space-y-3">
           {/* Delivery / Pickup segmented control */}
           <div className="flex justify-center">

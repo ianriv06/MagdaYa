@@ -68,7 +68,7 @@ export function DesktopHeader() {
   const { profile, user, signOut } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 hidden md:block bg-white/95 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-40 desktop-only-nav hidden md:block bg-white/95 backdrop-blur-md border-b border-border">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
         <Link
           href="/"

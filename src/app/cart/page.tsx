@@ -51,7 +51,7 @@ export default function CartPage() {
   const restaurantName = items[0]?.restaurantName;
 
   return (
-    <div className="min-h-dvh bg-white pb-[100px] md:pb-8">
+    <div className="min-h-dvh bg-white pb-[100px] desktop-no-mobile-nav-pad">
       <DesktopHeader />
       <div className="max-w-lg mx-auto px-4 py-5 animate-slide-up">
         <h1 className="text-[22px] font-bold tracking-tight mb-0.5">Carrito</h1>
