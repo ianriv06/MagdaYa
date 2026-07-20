@@ -21,14 +21,20 @@ export default function OrderTrackingPage() {
   const router = useRouter();
 
   const load = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("orders")
       .select(
-        "*, restaurants(*), order_items(*), drivers(*, profiles:user_id(*))"
+        "*, restaurants(*), order_items(*), drivers!driver_id(*, profiles:user_id(*))"
       )
       .eq("id", id)
-      .single();
-    setOrder(data);
+      .maybeSingle();
+
+    if (error) {
+      console.error("Order load error:", error);
+      setOrder(null);
+    } else {
+      setOrder(data);
+    }
     setLoading(false);
   };
 
