@@ -9,7 +9,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { formatCurrency, DELIVERY_FEE } from "@/lib/utils";
+import { formatCurrency, DELIVERY_FEE, PLATFORM_FEE } from "@/lib/utils";
 import {
   fileToCompressedDataUrl,
   formatCheckoutError,
@@ -46,7 +46,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
 
   const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
-  const total = subtotal() + deliveryFee;
+  const platformFee = PLATFORM_FEE;
+  const total = subtotal() + deliveryFee + platformFee;
 
   useEffect(() => {
     if (itemCount() === 0) {
@@ -358,6 +359,10 @@ export default function CheckoutPage() {
               <span>{formatCurrency(deliveryFee)}</span>
             </div>
           )}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted">Tarifa de plataforma</span>
+            <span>{formatCurrency(platformFee)}</span>
+          </div>
           <div className="border-t border-border pt-2 flex justify-between font-bold text-lg">
             <span>Total</span>
             <span className="text-brand">{formatCurrency(total)}</span>

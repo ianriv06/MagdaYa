@@ -18,22 +18,22 @@ const nav = [
   {
     href: "/restaurant",
     label: "Resumen",
-    icon: <LayoutDashboard className="size-6" />,
+    icon: <LayoutDashboard className="size-6" strokeWidth={1.5} fill="currentColor" />,
   },
   {
     href: "/restaurant/menu",
     label: "Menú",
-    icon: <UtensilsCrossed className="size-6" />,
+    icon: <UtensilsCrossed className="size-6" strokeWidth={1.5} fill="currentColor" />,
   },
   {
     href: "/restaurant/orders",
     label: "Pedidos",
-    icon: <ClipboardList className="size-6" />,
+    icon: <ClipboardList className="size-6" strokeWidth={1.5} fill="currentColor" />,
   },
   {
     href: "/restaurant/settings",
     label: "Configuración",
-    icon: <Settings className="size-6" />,
+    icon: <Settings className="size-6" strokeWidth={1.5} fill="currentColor" />,
   },
 ];
 

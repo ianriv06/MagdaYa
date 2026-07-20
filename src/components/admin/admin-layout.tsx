@@ -10,12 +10,12 @@ const nav = [
   {
     href: "/admin",
     label: "Pedidos",
-    icon: <ClipboardList className="size-6" />,
+    icon: <ClipboardList className="size-6" strokeWidth={1.5} fill="currentColor" />,
   },
   {
     href: "/admin/payment",
     label: "QR de pago",
-    icon: <QrCode className="size-6" />,
+    icon: <QrCode className="size-6" strokeWidth={1.5} fill="currentColor" />,
   },
 ];
 

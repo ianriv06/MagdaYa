@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/store/cart";
 import { CustomerNav, DesktopHeader } from "@/components/layout/customer-nav";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, cn, DELIVERY_FEE } from "@/lib/utils";
+import { formatCurrency, cn, DELIVERY_FEE, PLATFORM_FEE } from "@/lib/utils";
 import { Minus, Plus, Trash2, Bike, Store } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 
@@ -24,7 +24,8 @@ export default function CartPage() {
   const router = useRouter();
 
   const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
-  const total = subtotal() + deliveryFee;
+  const platformFee = PLATFORM_FEE;
+  const total = subtotal() + deliveryFee + platformFee;
 
   if (itemCount() === 0) {
     return (
@@ -146,6 +147,10 @@ export default function CartPage() {
                 ? formatCurrency(deliveryFee)
                 : "Gratis"}
             </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted">Tarifa de plataforma</span>
+            <span className="font-semibold">{formatCurrency(platformFee)}</span>
           </div>
           <div className="border-t border-border pt-3 flex justify-between text-[16px] font-bold">
             <span>Total</span>

@@ -16,7 +16,10 @@ export function formatCurrency(amount: number | string) {
 }
 
 /** Flat delivery fee in Bs */
-export const DELIVERY_FEE = 20;
+export const DELIVERY_FEE = 3;
+
+/** Platform service fee in Bs (applied to every order) */
+export const PLATFORM_FEE = 3;
 
 /** Synthetic email domain so Supabase Auth can use phone as the login identity. */
 export const PHONE_AUTH_DOMAIN = "phone.magdaya.app";
